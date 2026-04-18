@@ -1622,11 +1622,24 @@ function renderMacroBtns(selectedMacros) {
 // Builds the dose chip section HTML. Called on first render and on sup change.
 function renderDoseSection(sup, lf) {
   const doses = sup && sup.doses;
-  if (!doses || !doses.length) {
-    // Fallback: free-text input for supplements with no dose data
+
+  // No supplement selected yet — show placeholder prompt
+  if (!sup) {
     return `
       <div class="form-group">
-        <label>Dose (optional)</label>
+        <label class="dose-section-label">Dose (optional)</label>
+        <div style="padding:12px 14px;background:#f8fafc;border:1.5px dashed #d1d5db;border-radius:10px;
+          color:var(--text-muted);font-size:13px;text-align:center">
+          👆 Select a supplement above to see common dose options
+        </div>
+      </div>`;
+  }
+
+  if (!doses || !doses.length) {
+    // Supplement exists but has no preset doses — free-text fallback
+    return `
+      <div class="form-group">
+        <label class="dose-section-label">Dose (optional)</label>
         <div style="display:flex;gap:10px;align-items:center">
           <input type="number" id="doseCustomAmt" placeholder="e.g. 2000"
             value="${lf.dose||''}" style="flex:1"
