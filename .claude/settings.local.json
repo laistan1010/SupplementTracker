@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:supptrack-b62wyujs.manus.space)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(py --version)",
+      "Bash(npx --version)",
+      "Bash(node -e \"const s = require\\('C:/Users/tkpc_/OneDrive/桌面/Supplement Tracker/data/supplements.js'.replace\\(/\\\\//g,'/'\\)\\); \")",
+      "Bash(node -e \"eval\\(require\\('fs'\\).readFileSync\\('C:/Users/tkpc_/OneDrive/桌面/Supplement Tracker/data/supplements.js','utf8'\\)\\); SUPP_DB.forEach\\(\\(s,i\\)=>console.log\\(i+1+'. '+s.name\\)\\)\")",
+      "Bash(grep -v \"//.*function\")",
+      "Bash(git -C \"C:\\\\Users\\\\tkpc_\\\\OneDrive\\\\桌面\\\\Supplement Tracker\" status)"
+    ]
+  }
+}
