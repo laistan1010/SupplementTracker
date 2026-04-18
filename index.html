@@ -273,6 +273,26 @@
     .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
     .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 
+    /* ── DOSE CHIPS ── */
+    .dose-section-label { font-size:13px; font-weight:600; color:var(--text-muted); margin-bottom:8px; }
+    .dose-chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:4px; }
+    .dose-chip {
+      padding:6px 14px; border-radius:20px; border:1.5px solid #d1d5db;
+      background:#f9fafb; font-size:13px; font-weight:600; color:#374151;
+      cursor:pointer; transition:all .15s; white-space:nowrap;
+    }
+    .dose-chip:hover { border-color:var(--primary); color:var(--primary); background:#eff6ff; }
+    .dose-chip.active { background:var(--primary); border-color:var(--primary); color:#fff; }
+    .dose-chip.warn { border-color:#f59e0b; color:#92400e; background:#fffbeb; }
+    .dose-chip.warn:hover { background:#fef3c7; border-color:#d97706; }
+    .dose-chip.warn.active { background:#f59e0b; border-color:#f59e0b; color:#fff; }
+    .dose-chip.custom-chip { border-style:dashed; color:#6b7280; }
+    .dose-chip.custom-chip:hover { border-color:var(--primary); color:var(--primary); background:#eff6ff; }
+    .dose-chip.custom-chip.active { background:#f3f4f6; border-color:var(--primary); color:var(--primary); border-style:solid; }
+    .custom-dose-row { display:none; margin-top:10px; }
+    .custom-dose-row.visible { display:flex; gap:10px; align-items:flex-end; }
+    .custom-dose-row .form-group { margin-bottom:0; flex:1; }
+
     /* ── TYPEAHEAD ── */
     .ta-wrap { position: relative; }
     .ta-dropdown {
@@ -1574,17 +1594,120 @@ function renderMacroBtns(selectedMacro) {
     </button>`).join('');
 }
 
-// Called when user picks a supplement — updates info box + clears score, no page rebuild
+// ── DOSE CHIPS ─────────────────────────────────────────────────────────────
+// Builds the dose chip section HTML. Called on first render and on sup change.
+function renderDoseSection(sup, lf) {
+  const doses = sup && sup.doses;
+  if (!doses || !doses.length) {
+    // Fallback: free-text input for supplements with no dose data
+    return `
+      <div class="form-group">
+        <label>Dose (optional)</label>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input type="number" id="doseCustomAmt" placeholder="e.g. 2000"
+            value="${lf.dose||''}" style="flex:1"
+            oninput="S.logForm.dose=this.value">
+          <select id="doseCustomUnit" onchange="S.logForm.unit=this.value" style="width:90px">
+            ${['mg','mcg','g','IU','CFU','ml','capsule'].map(u=>`<option${(lf.unit||'mg')===u?' selected':''}>${u}</option>`).join('')}
+          </select>
+        </div>
+      </div>`;
+  }
+
+  // Determine which chip (if any) matches current logForm state
+  const curAmt  = parseFloat(lf.dose);
+  const curUnit = lf.unit || '';
+  const matchIdx = doses.findIndex(d => d.amount === curAmt && d.unit === curUnit);
+  const isCustomActive = lf.dose && matchIdx === -1;
+
+  const chipsHtml = doses.map((d, i) => {
+    const isWarn = d.label && d.label.includes('⚠️');
+    const isActive = i === matchIdx;
+    let cls = 'dose-chip';
+    if (isWarn)   cls += ' warn';
+    if (isActive) cls += ' active';
+    return `<button type="button" class="${cls}"
+      onclick="pickDose(${d.amount},'${d.unit}',this)"
+      title="${d.label}">${d.label} — ${d.amount} ${d.unit}</button>`;
+  }).join('');
+
+  const customActiveCls = isCustomActive ? ' active' : '';
+  const customRowVis    = isCustomActive ? ' visible' : '';
+
+  return `
+    <div class="form-group" style="margin-bottom:0">
+      <label class="dose-section-label">Dose (optional)</label>
+      <div class="dose-chips" id="doseChipRow">
+        ${chipsHtml}
+        <button type="button" class="dose-chip custom-chip${customActiveCls}" id="customChipBtn"
+          onclick="showCustomDose()">✏️ Custom</button>
+      </div>
+      <div class="custom-dose-row${customRowVis}" id="customDoseRow">
+        <div class="form-group">
+          <label style="font-size:12px;color:var(--text-muted)">Amount</label>
+          <input type="number" id="doseCustomAmt" placeholder="e.g. 2000"
+            value="${isCustomActive ? lf.dose : ''}"
+            oninput="S.logForm.dose=this.value">
+        </div>
+        <div class="form-group">
+          <label style="font-size:12px;color:var(--text-muted)">Unit</label>
+          <select id="doseCustomUnit" onchange="S.logForm.unit=this.value" style="width:90px">
+            ${['mg','mcg','g','IU','CFU','ml','capsule'].map(u=>`<option${(lf.unit||'mg')===u?' selected':''}>${u}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>`;
+}
+
+// User clicked a preset chip — set dose+unit in state, update chip visuals, no re-render
+function pickDose(amount, unit, chipEl) {
+  S.logForm.dose = String(amount);
+  S.logForm.unit = unit;
+  // Toggle active class on chips
+  const row = document.getElementById('doseChipRow');
+  if (row) {
+    row.querySelectorAll('.dose-chip').forEach(c => c.classList.remove('active'));
+    if (chipEl) chipEl.classList.add('active');
+  }
+  // Hide custom row
+  const customRow = document.getElementById('customDoseRow');
+  const customBtn = document.getElementById('customChipBtn');
+  if (customRow) customRow.classList.remove('visible');
+  if (customBtn) customBtn.classList.remove('active');
+}
+
+// User clicked "✏️ Custom" — reveal free-text inputs
+function showCustomDose() {
+  // Clear any preset chip selection
+  S.logForm.dose = '';
+  const row = document.getElementById('doseChipRow');
+  if (row) row.querySelectorAll('.dose-chip:not(.custom-chip)').forEach(c => c.classList.remove('active'));
+  const customBtn = document.getElementById('customChipBtn');
+  if (customBtn) customBtn.classList.add('active');
+  const customRow = document.getElementById('customDoseRow');
+  if (customRow) {
+    customRow.classList.add('visible');
+    // Focus the amount input
+    const inp = document.getElementById('doseCustomAmt');
+    if (inp) { inp.value = ''; inp.focus(); }
+  }
+}
+
+// Called when user picks a supplement — updates info box + dose chips + clears score, no page rebuild
 function onSupChange(val) {
   S.logForm.supplement = val;
   S.logForm.macro = '';
+  S.logForm.dose = '';
+  S.logForm.unit = 'mg';
   const sup = DB.find(s=>s.name===val);
-  const infoEl = document.getElementById('sup-info');
+  const infoEl  = document.getElementById('sup-info');
   const scoreEl = document.getElementById('score-area');
   const macroEl = document.getElementById('macro-btns');
-  if (infoEl) infoEl.innerHTML = renderSupInfo(sup);
+  const doseEl  = document.getElementById('dose-section');
+  if (infoEl)  infoEl.innerHTML  = renderSupInfo(sup);
   if (scoreEl) scoreEl.innerHTML = '';
   if (macroEl) macroEl.innerHTML = renderMacroBtns('');
+  if (doseEl)  doseEl.innerHTML  = renderDoseSection(sup, S.logForm);
 }
 
 // Called when user clicks a macro button — only updates button states + live score
@@ -1709,19 +1832,7 @@ function vLog() {
 
       <div id="sup-info">${renderSupInfo(sel)}</div>
 
-      <div class="grid-2">
-        <div class="form-group">
-          <label>Dose (optional)</label>
-          <input type="number" id="doseInput" placeholder="e.g. 2000" value="${lf.dose}"
-            oninput="S.logForm.dose=this.value">
-        </div>
-        <div class="form-group">
-          <label>Unit</label>
-          <select id="unitSelect" onchange="S.logForm.unit=this.value">
-            ${['mg','mcg','g','IU','CFU','ml','capsule'].map(u=>`<option${lf.unit===u?' selected':''}>${u}</option>`).join('')}
-          </select>
-        </div>
-      </div>
+      <div id="dose-section">${renderDoseSection(sel, lf)}</div>
 
       <div class="form-group">
         <label>Taken with — choose one for live absorption score</label>
