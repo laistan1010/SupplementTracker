@@ -337,8 +337,7 @@
     .mac-fat.sel     { background:#fef3c7; border-color:#f59e0b; color:#92400e; }
     .mac-carbs.sel   { background:#dbeafe; border-color:#3b82f6; color:#1e40af; }
     .mac-protein.sel { background:#fce7f3; border-color:#ec4899; color:#9d174d; }
-    .mac-water.sel   { background:#cffafe; border-color:#06b6d4; color:#164e63; }
-    .mac-empty.sel   { background:#f1f5f9; border-color:#64748b; color:#334155; }
+    .mac-nofood.sel  { background:#f1f5f9; border-color:#64748b; color:#334155; }
 
     /* ── LIVE SCORE BOX ── */
     .live-score {
@@ -1228,7 +1227,7 @@ let S = {
   profile: { name:'', age:'', sex:'', conditions:[], medications:[] },
   loggedToday: [],
   history: [],
-  logForm: { supplement:'', dose:'', unit:'mg', macro:'', notes:'' },
+  logForm: { supplement:'', dose:'', unit:'mg', macros:[], notes:'' },
   schedule: {},        // { "Supplement Name": { slot:"morning", days:["mon","tue",...] } }
   notifiedSlots: {}    // { "2026-04-18_morning": true } — prevents re-firing browser notif
 };
@@ -1314,29 +1313,52 @@ function scoreBar(score, label) {
     </div>`;
 }
 
-function liveScore(sup, macro) {
-  const opt = sup.absorption.macro;
+function liveScore(sup, macros) {
+  // Accept array or legacy string
+  const sel = Array.isArray(macros) ? macros : (macros ? [macros] : []);
+  if (!sel.length) return '';
+  const opt       = sup.absorption.macro;
+  const hasNofood = sel.includes('nofood');
+  const foodSel   = sel.filter(m => m !== 'nofood');
+
   let score, label, msg;
-  if (macro === opt) {
+
+  // ── exact match (e.g. opt='fat' and user selected fat) ──
+  if (sel.includes(opt)) {
     score = sup.absorption.score; label = 'Excellent';
     msg = `✅ Optimal! ${sup.name} absorbs best ${sup.absorption.macroLabel}.`;
-  } else if (opt==='food' && ['fat','carbs','protein'].includes(macro)) {
-    score = Math.round(sup.absorption.score*0.82); label = 'Good';
-    msg = `⚡ Good — any food works, but try to include ${sup.absorption.macroLabel}.`;
-  } else if (['fat','protein'].includes(macro) && ['fat','protein'].includes(opt)) {
-    score = Math.round(sup.absorption.score*0.78); label = 'Good';
-    msg = `⚡ Decent. For best results, pair with ${sup.absorption.macroLabel}.`;
-  } else if (macro==='water' && opt!=='water') {
-    score = Math.round(sup.absorption.score*0.38); label = 'Poor';
-    msg = `⚠️ Poor absorption on water alone. ${sup.name} needs ${sup.absorption.macroLabel}.`;
-  } else if (macro==='empty' && opt!=='empty') {
-    score = Math.round(sup.absorption.score*0.42); label = 'Poor';
-    msg = `⚠️ Empty stomach not ideal here. Best taken ${sup.absorption.macroLabel}.`;
+
+  // ── supplement just needs "any food" and user picked at least one food macro ──
+  } else if (opt === 'food' && foodSel.length > 0) {
+    score = Math.round(sup.absorption.score * 0.88); label = 'Excellent';
+    msg = `✅ Great — any food works well for ${sup.name}.`;
+
+  // ── supplement prefers empty/no-food and user selected No Food ──
+  } else if (hasNofood && (opt === 'empty' || opt === 'water')) {
+    score = sup.absorption.score; label = 'Excellent';
+    msg = `✅ Optimal! ${sup.name} absorbs best on an empty stomach.`;
+
+  // ── supplement needs fat or protein and user has one of them ──
+  } else if (['fat','protein'].includes(opt) && foodSel.some(m => ['fat','protein'].includes(m))) {
+    score = Math.round(sup.absorption.score * 0.78); label = 'Good';
+    msg = `⚡ Good, but best with ${sup.absorption.macroLabel} specifically.`;
+
+  // ── supplement needs food but user chose No Food ──
+  } else if (hasNofood && !['empty','water'].includes(opt)) {
+    score = Math.round(sup.absorption.score * 0.38); label = 'Poor';
+    msg = `⚠️ Poor without food. ${sup.name} needs ${sup.absorption.macroLabel} for proper absorption.`;
+
+  // ── supplement needs empty stomach but user is eating ──
+  } else if ((opt === 'empty' || opt === 'water') && foodSel.length > 0) {
+    score = Math.round(sup.absorption.score * 0.58); label = 'Moderate';
+    msg = `⚡ Food slows absorption. ${sup.name} absorbs faster on an empty stomach.`;
+
   } else {
-    score = Math.round(sup.absorption.score*0.62); label = 'Moderate';
+    score = Math.round(sup.absorption.score * 0.62); label = 'Moderate';
     msg = `⚡ Can be better. Optimal: ${sup.absorption.macroLabel}.`;
   }
-  const cls = score>=75?'sc-excellent':score>=50?'sc-good':'sc-poor';
+
+  const cls = score >= 75 ? 'sc-excellent' : score >= 50 ? 'sc-good' : 'sc-poor';
   return `
     <div class="live-score">
       <div class="live-score-title">Live Absorption Score</div>
@@ -1555,11 +1577,10 @@ function handleSearch(val) {
 
 /* ── LOG ── */
 const MACROS = [
-  {k:'fat',    lbl:'🥑 Fat',         hint:'eggs, nuts, avocado, oil'},
-  {k:'carbs',  lbl:'🍚 Carbs',        hint:'rice, bread, oats, fruit'},
-  {k:'protein',lbl:'🥩 Protein',      hint:'meat, fish, dairy, eggs'},
-  {k:'water',  lbl:'💧 Water only',   hint:'fasting / no food'},
-  {k:'empty',  lbl:'⬜ Empty stomach', hint:'before eating anything'}
+  {k:'fat',    lbl:'🥑 Fat',       hint:'Eating fat alongside — eggs, nuts, avocado, olive oil. Best for fat-soluble vitamins (D3, K2, A, E). Can combine with other macros.'},
+  {k:'carbs',  lbl:'🍚 Carbs',     hint:'Eating carbs alongside — rice, bread, oats, fruit. Helps with creatine, some minerals and B vitamins. Can combine with other macros.'},
+  {k:'protein',lbl:'🥩 Protein',   hint:'Eating protein alongside — meat, fish, dairy, eggs. Good for zinc, collagen, amino acids. Can combine with other macros.'},
+  {k:'nofood', lbl:'🚫 No Food',   hint:'No food at all — just water. Stomach empty or 2+ hours since last meal. Best for 5-HTP, NAC, melatonin, citrulline, pre-workout. Selecting this clears food choices.'}
 ];
 
 function renderSupInfo(sup) {
@@ -1586,9 +1607,12 @@ function renderSupInfo(sup) {
     </div>`;
 }
 
-function renderMacroBtns(selectedMacro) {
+function renderMacroBtns(selectedMacros) {
+  // Accept array or legacy string
+  const sel = Array.isArray(selectedMacros) ? selectedMacros
+            : (selectedMacros ? [selectedMacros] : []);
   return MACROS.map(m=>`
-    <button class="mac-btn mac-${m.k}${selectedMacro===m.k?' sel':''}"
+    <button class="mac-btn mac-${m.k}${sel.includes(m.k)?' sel':''}"
       data-macro="${m.k}" onclick="onMacroChange('${m.k}')" title="${m.hint}">
       ${m.lbl}
     </button>`).join('');
@@ -1696,7 +1720,7 @@ function showCustomDose() {
 // Called when user picks a supplement — updates info box + dose chips + clears score, no page rebuild
 function onSupChange(val) {
   S.logForm.supplement = val;
-  S.logForm.macro = '';
+  S.logForm.macros = [];
   S.logForm.dose = '';
   S.logForm.unit = 'mg';
   const sup = DB.find(s=>s.name===val);
@@ -1706,21 +1730,36 @@ function onSupChange(val) {
   const doseEl  = document.getElementById('dose-section');
   if (infoEl)  infoEl.innerHTML  = renderSupInfo(sup);
   if (scoreEl) scoreEl.innerHTML = '';
-  if (macroEl) macroEl.innerHTML = renderMacroBtns('');
+  if (macroEl) macroEl.innerHTML = renderMacroBtns([]);
   if (doseEl)  doseEl.innerHTML  = renderDoseSection(sup, S.logForm);
 }
 
-// Called when user clicks a macro button — only updates button states + live score
+// Called when user clicks a macro button — multi-select with mutual exclusion, no re-render
 function onMacroChange(val) {
-  S.logForm.macro = val;
-  // Toggle button selected state without re-rendering
-  document.querySelectorAll('#macro-btns .mac-btn').forEach(btn=>{
+  let macros = Array.isArray(S.logForm.macros) ? [...S.logForm.macros] : [];
+  if (val === 'nofood') {
+    // Toggle: selecting No Food clears all food macros (mutually exclusive)
+    macros = macros.includes('nofood') ? [] : ['nofood'];
+  } else {
+    // Food macro: always clear 'nofood' first
+    macros = macros.filter(m => m !== 'nofood');
+    // Toggle this food macro on/off
+    if (macros.includes(val)) {
+      macros = macros.filter(m => m !== val);
+    } else {
+      macros.push(val);
+    }
+  }
+  S.logForm.macros = macros;
+  // Update button states without re-rendering
+  document.querySelectorAll('#macro-btns .mac-btn').forEach(btn => {
     const k = btn.dataset.macro;
-    btn.className = `mac-btn mac-${k}${k===val?' sel':''}`;
+    btn.className = `mac-btn mac-${k}${macros.includes(k) ? ' sel' : ''}`;
   });
-  const sup = DB.find(s=>s.name===S.logForm.supplement);
+  // Refresh live score
+  const sup = DB.find(s => s.name === S.logForm.supplement);
   const scoreEl = document.getElementById('score-area');
-  if (scoreEl) scoreEl.innerHTML = sup ? liveScore(sup, val) : '';
+  if (scoreEl) scoreEl.innerHTML = (sup && macros.length) ? liveScore(sup, macros) : '';
 }
 
 // Builds the "Today's Schedule" chip panel shown above the log form
@@ -1835,11 +1874,15 @@ function vLog() {
       <div id="dose-section">${renderDoseSection(sel, lf)}</div>
 
       <div class="form-group">
-        <label>Taken with — choose one for live absorption score</label>
-        <div class="macro-grid" id="macro-btns">${renderMacroBtns(lf.macro)}</div>
+        <label>Taken with — select all that apply for live absorption score</label>
+        <div class="macro-grid" id="macro-btns">${renderMacroBtns(lf.macros||[])}</div>
+        <div style="font-size:11.5px;color:var(--text-muted);margin-top:7px;line-height:1.5">
+          💡 Fat, Carbs, Protein can be selected together &nbsp;·&nbsp;
+          <b>🚫 No Food</b> = empty stomach / just water, clears other selections
+        </div>
       </div>
 
-      <div id="score-area">${sel&&lf.macro?liveScore(sel,lf.macro):''}</div>
+      <div id="score-area">${sel&&(lf.macros||[]).length?liveScore(sel,lf.macros):''}</div>
 
       <div class="form-group">
         <label>Notes (optional)</label>
@@ -2102,29 +2145,41 @@ function submitLog() {
   if (!lf.supplement) { toast('⚠️ Please select a supplement'); return; }
   const sup = DB.find(s=>s.name===lf.supplement);
 
+  // Support both new macros[] array and legacy macro string
+  const macros = Array.isArray(lf.macros) && lf.macros.length ? lf.macros
+               : (lf.macro ? [lf.macro] : []);
   let aScore = null;
-  if (sup && lf.macro) {
-    const opt = sup.absorption.macro;
-    if (lf.macro===opt) aScore=sup.absorption.score;
-    else if(opt==='food'&&['fat','carbs','protein'].includes(lf.macro)) aScore=Math.round(sup.absorption.score*.82);
-    else if(['fat','protein'].includes(lf.macro)&&['fat','protein'].includes(opt)) aScore=Math.round(sup.absorption.score*.78);
-    else if(lf.macro==='water'||lf.macro==='empty') aScore=Math.round(sup.absorption.score*.40);
-    else aScore=Math.round(sup.absorption.score*.62);
+  if (sup && macros.length) {
+    const opt      = sup.absorption.macro;
+    const hasNofood = macros.includes('nofood');
+    const foodSel   = macros.filter(m => m !== 'nofood');
+    if (macros.includes(opt))                                                   aScore = sup.absorption.score;
+    else if (opt==='food' && foodSel.length)                                    aScore = Math.round(sup.absorption.score * .88);
+    else if (hasNofood && (opt==='empty'||opt==='water'))                       aScore = sup.absorption.score;
+    else if (['fat','protein'].includes(opt) && foodSel.some(m=>['fat','protein'].includes(m))) aScore = Math.round(sup.absorption.score * .78);
+    else if (hasNofood)                                                         aScore = Math.round(sup.absorption.score * .38);
+    else                                                                        aScore = Math.round(sup.absorption.score * .62);
   }
+
+  // Friendly label for history display (e.g. "Fat + Carbs" or "No Food")
+  const macroLabel = macros.length
+    ? macros.map(m => m==='nofood'?'No Food' : m.charAt(0).toUpperCase()+m.slice(1)).join(' + ')
+    : '';
 
   S.loggedToday.push({
     id: Date.now().toString(),
     name: lf.supplement,
     dose: lf.dose,
     unit: lf.unit,
-    macro: lf.macro,
+    macros,
+    macro: macroLabel,   // keep for backward compat with CSV/history display
     notes: lf.notes,
     absorptionScore: aScore,
     date: todayStr(),
     time: new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})
   });
 
-  S.logForm = {supplement:'',dose:'',unit:'mg',macro:'',notes:''};
+  S.logForm = {supplement:'',dose:'',unit:'mg',macros:[],notes:''};
   save();
   toast(`✅ ${lf.supplement} logged!`);
   const c = detectConflicts(S.loggedToday);
@@ -2134,7 +2189,7 @@ function submitLog() {
 
 function quickLog(name) {
   S.logForm.supplement = name;
-  S.logForm.macro = '';
+  S.logForm.macros = [];
   go('log');
 }
 // ── DELETE WITH 5-SECOND UNDO ────────────────────────
@@ -2738,7 +2793,7 @@ function showReminderModal(slot, due) {
           <div class="rm-item-name">${name}</div>
           <div class="rm-item-cat">${sup ? sup.category : ''}</div>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="logOneFromModal('${safe}')">Log</button>
+        <button class="btn btn-primary btn-sm" onclick="logOneFromModal('${safe}')" title="Open full log form with dose options">Log + Dose →</button>
       </div>`;
   }).join('');
 
@@ -2754,30 +2809,21 @@ function rmOverlayClick(e) {
 }
 
 function logOneFromModal(name) {
-  // Already logged? skip
-  if (S.loggedToday.some(l => l.name === name)) return;
-  S.loggedToday.push({
-    id: Date.now() + Math.random(),
-    name,
-    dose:'', unit:'mg', macro:'', absorptionScore:null, notes:'',
-    time: new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})
-  });
-  save();
-  if (S.view === 'dashboard') render();
-
-  // Update item inside modal (don't close yet)
-  const uid = name.replace(/[^a-z0-9]/gi,'_');
-  const el  = document.getElementById('rmi_' + uid);
-  if (el) {
-    const sup = DB.find(s => s.name === name);
-    el.innerHTML = `
-      <span class="rm-item-emoji">${sup ? sup.emoji : '💊'}</span>
-      <div class="rm-item-info"><div class="rm-item-name">${name}</div></div>
-      <span class="rm-item-done">✅ Logged</span>`;
-  }
-  // Auto-close when all done
-  const remaining = document.querySelectorAll('#rm-list .btn');
-  if (remaining.length === 0) setTimeout(closeReminderModal, 700);
+  // Navigate to Log page with this supplement pre-filled so user can pick dose chips
+  closeReminderModal();
+  S.logForm.supplement = name;
+  S.logForm.dose = '';
+  S.logForm.unit = 'mg';
+  S.logForm.macros = [];
+  S.logForm.notes = '';
+  go('log');
+  // After render, fill the typeahead input and load dose chips
+  setTimeout(() => {
+    const input = document.getElementById('supTypeahead');
+    if (input) input.value = name;
+    onSupChange(name);
+    document.getElementById('logForm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 60);
 }
 
 function logAllFromModal() {
