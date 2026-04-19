@@ -273,6 +273,33 @@
     .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
     .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 
+    /* ── BACK-DATE PICKER ── */
+    .log-date-bar {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:9px 13px; border-radius:10px; background:#f0f9ff;
+      border:1.5px solid #bae6fd; cursor:pointer; margin-bottom:14px;
+      transition:background .15s;
+    }
+    .log-date-bar:hover { background:#e0f2fe; }
+    .log-date-bar.backdate { background:#fef3c7; border-color:#fbbf24; }
+    .log-date-bar-label { font-size:13px; font-weight:600; color:#0369a1; }
+    .log-date-bar.backdate .log-date-bar-label { color:#92400e; }
+    .log-date-bar-chevron { font-size:11px; color:#94a3b8; transition:transform .2s; }
+    .log-date-bar.open .log-date-bar-chevron { transform:rotate(180deg); }
+    .log-date-chips-wrap { display:none; margin-bottom:14px; }
+    .log-date-chips-wrap.open {
+      display:flex; flex-wrap:wrap; gap:8px; padding:4px 0;
+    }
+    .log-date-chip {
+      padding:6px 14px; border-radius:20px; border:1.5px solid #d1d5db;
+      background:#f9fafb; font-size:13px; font-weight:600; color:#374151;
+      cursor:pointer; transition:all .15s; white-space:nowrap;
+    }
+    .log-date-chip:hover { border-color:#0284c7; color:#0284c7; background:#f0f9ff; }
+    .log-date-chip.active { background:#0284c7; border-color:#0284c7; color:#fff; }
+    .log-date-chip.today { border-color:#10b981; color:#065f46; background:#ecfdf5; }
+    .log-date-chip.today.active { background:#10b981; border-color:#10b981; color:#fff; }
+
     /* ── DOSE CHIPS ── */
     .dose-section-label { font-size:13px; font-weight:600; color:var(--text-muted); margin-bottom:8px; }
     .dose-chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:4px; }
@@ -1276,7 +1303,7 @@ let S = {
   profile: { name:'', age:'', sex:'', conditions:[], medications:[] },
   loggedToday: [],
   history: [],
-  logForm: { supplement:'', dose:'', unit:'mg', macros:[], notes:'' },
+  logForm: { supplement:'', dose:'', unit:'mg', macros:[], notes:'', logDate:'' },
   schedule: {},        // { "Supplement Name": { slot:"morning", days:["mon","tue",...] } }
   notifiedSlots: {}    // { "2026-04-18_morning": true } — prevents re-firing browser notif
 };
@@ -1312,6 +1339,73 @@ function save() {
 function todayStr() { return new Date().toISOString().split('T')[0]; }
 function fmtDate(ds) {
   return new Date(ds+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+}
+
+// Returns array of last 7 days: [{dateStr, label, isToday}]
+function getBackdateDays() {
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    let label;
+    if (i === 0) label = '📅 Today';
+    else if (i === 1) label = 'Yesterday';
+    else label = d.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+    days.push({ dateStr, label, isToday: i === 0 });
+  }
+  return days;
+}
+
+// Render the back-date bar + collapsible chips (called once in vLog, updated in-place after)
+function renderLogDateSection(currentDate) {
+  const today = todayStr();
+  const isToday = !currentDate || currentDate === today;
+  const label = isToday ? '📅 Today' : `📅 ${fmtDate(currentDate)}`;
+  const barCls = isToday ? 'log-date-bar' : 'log-date-bar backdate';
+
+  const chips = getBackdateDays().map(({dateStr, label: chipLabel, isToday: chipIsToday}) => {
+    const activeCls = (currentDate || today) === dateStr ? ' active' : '';
+    const todayCls  = chipIsToday ? ' today' : '';
+    return `<button type="button" class="log-date-chip${todayCls}${activeCls}"
+      onclick="setLogDate('${dateStr}',this)">${chipLabel}</button>`;
+  }).join('');
+
+  return `
+    <div class="${barCls}" id="logDateBar" onclick="toggleLogDatePicker()">
+      <span class="log-date-bar-label">${label}</span>
+      <span class="log-date-bar-chevron">▼</span>
+    </div>
+    <div class="log-date-chips-wrap" id="logDateChips">${chips}</div>`;
+}
+
+// Toggle the date picker open/closed
+function toggleLogDatePicker() {
+  document.getElementById('logDateBar')?.classList.toggle('open');
+  document.getElementById('logDateChips')?.classList.toggle('open');
+}
+
+// User picked a date chip
+function setLogDate(dateStr, chipEl) {
+  S.logForm.logDate = dateStr;
+  const today = todayStr();
+  const isToday = dateStr === today;
+
+  // Update chip active states
+  document.querySelectorAll('.log-date-chip').forEach(c => c.classList.remove('active'));
+  if (chipEl) chipEl.classList.add('active');
+
+  // Update bar label + style
+  const bar = document.getElementById('logDateBar');
+  if (bar) {
+    const labelEl = bar.querySelector('.log-date-bar-label');
+    if (labelEl) labelEl.textContent = isToday ? '📅 Today' : `📅 ${fmtDate(dateStr)}`;
+    bar.classList.toggle('backdate', !isToday);
+  }
+
+  // Close the picker
+  document.getElementById('logDateBar')?.classList.remove('open');
+  document.getElementById('logDateChips')?.classList.remove('open');
 }
 
 // ════════════════════════════════════════════════════
@@ -1932,6 +2026,8 @@ function vLog() {
 
     <div class="card" style="max-width:560px" id="logForm">
 
+      ${renderLogDateSection(lf.logDate)}
+
       <div class="form-group">
         <label>Supplement *</label>
         <div class="ta-wrap">
@@ -2242,25 +2338,44 @@ function submitLog() {
     ? macros.map(m => m==='nofood'?'No Food' : m.charAt(0).toUpperCase()+m.slice(1)).join(' + ')
     : '';
 
-  S.loggedToday.push({
+  const today      = todayStr();
+  const logDate    = lf.logDate && lf.logDate !== today ? lf.logDate : today;
+  const isBackdate = logDate !== today;
+
+  const entry = {
     id: Date.now().toString(),
     name: lf.supplement,
     dose: lf.dose,
     unit: lf.unit,
     macros,
-    macro: macroLabel,   // keep for backward compat with CSV/history display
+    macro: macroLabel,
     notes: lf.notes,
     absorptionScore: aScore,
-    date: todayStr(),
+    date: logDate,
     time: new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})
-  });
+  };
 
-  S.logForm = {supplement:'',dose:'',unit:'mg',macros:[],notes:''};
+  if (isBackdate) {
+    // Back-dated → goes straight to history, sorted by date descending
+    S.history.push(entry);
+    S.history.sort((a,b) => b.date.localeCompare(a.date) || (b.time||'').localeCompare(a.time||''));
+  } else {
+    // Today → normal flow
+    S.loggedToday.push(entry);
+  }
+
+  S.logForm = {supplement:'',dose:'',unit:'mg',macros:[],notes:'',logDate:''};
   save();
-  toast(`✅ ${lf.supplement} logged!`);
-  const c = detectConflicts(S.loggedToday);
-  if (c.length) setTimeout(()=>toast(`⚠️ ${c.length} conflict${c.length>1?'s':''} detected — check Dashboard`),900);
-  go('dashboard');
+
+  if (isBackdate) {
+    toast(`✅ ${lf.supplement} logged for ${fmtDate(logDate)}!`);
+    go('history'); // go to history so user sees the back-dated entry
+  } else {
+    toast(`✅ ${lf.supplement} logged!`);
+    const c = detectConflicts(S.loggedToday);
+    if (c.length) setTimeout(()=>toast(`⚠️ ${c.length} conflict${c.length>1?'s':''} detected — check Dashboard`),900);
+    go('dashboard');
+  }
 }
 
 function quickLog(name) {
