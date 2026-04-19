@@ -1693,6 +1693,929 @@ var SUPP_DB = [
       {"amount": 1000, "unit": "mg", "label": "Standard"},
       {"amount": 2000, "unit": "mg", "label": "High"}
     ]
+  },
+
+  // ── B VITAMINS (REMAINING) ───────────────────────
+
+  {
+    "name": "Folate (Vitamin B9)",
+    "aliases": ["Folic Acid", "B9", "Methylfolate", "MTHF", "L-Methylfolate"],
+    "category": "Water-Soluble Vitamin",
+    "emoji": "🌿",
+    "color": "#34d399",
+    "timing": "morning",
+    "timingNote": "Take with morning meal",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 85, "scoreLabel": "Excellent", "tip": "Well absorbed with or without food. Methylfolate form is preferable for those with MTHFR gene variants." },
+    "conflicts": [
+      { "name": "Methotrexate", "sev": "high", "note": "⚠️ MEDICATION: Methotrexate blocks folate metabolism — supplementing may interfere with the drug's action. Consult your doctor." }
+    ],
+    "pairsWith": "Vitamin B12",
+    "pairsNote": "Folate and B12 work together for DNA synthesis and homocysteine reduction.",
+    "healthWarnings": ["on methotrexate therapy"],
+    "doses": [
+      {"amount": 400, "unit": "mcg", "label": "RDA"},
+      {"amount": 800, "unit": "mcg", "label": "Standard"},
+      {"amount": 1000, "unit": "mcg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Vitamin B5 (Pantothenic Acid)",
+    "aliases": ["B5", "Pantothenic Acid", "Pantothenate", "Calcium Pantothenate"],
+    "category": "Water-Soluble Vitamin",
+    "emoji": "🔋",
+    "color": "#f59e0b",
+    "timing": "morning",
+    "timingNote": "Take with morning meal",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 82, "scoreLabel": "Excellent", "tip": "Well absorbed with or without food. Part of CoA — essential for energy metabolism." },
+    "conflicts": [],
+    "pairsWith": "B-Complex",
+    "pairsNote": "Works best alongside other B vitamins as part of a complete B-complex.",
+    "healthWarnings": [],
+    "doses": [
+      {"amount": 250, "unit": "mg", "label": "Low"},
+      {"amount": 500, "unit": "mg", "label": "Standard"},
+      {"amount": 1000, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Vitamin B1 (Thiamine)",
+    "aliases": ["B1", "Thiamine", "Thiamin", "Thiamine HCl", "Benfotiamine"],
+    "category": "Water-Soluble Vitamin",
+    "emoji": "⚡",
+    "color": "#fbbf24",
+    "timing": "morning",
+    "timingNote": "Take with morning meal",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 75, "scoreLabel": "Good", "tip": "Absorption is dose-dependent — higher doses absorb less efficiently. Benfotiamine form has better bioavailability than standard thiamine HCl." },
+    "conflicts": [],
+    "healthWarnings": [],
+    "doses": [
+      {"amount": 50, "unit": "mg", "label": "Low"},
+      {"amount": 100, "unit": "mg", "label": "Standard"},
+      {"amount": 300, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Vitamin B2 (Riboflavin)",
+    "aliases": ["B2", "Riboflavin", "Riboflavin 5'-Phosphate"],
+    "category": "Water-Soluble Vitamin",
+    "emoji": "💛",
+    "color": "#fde68a",
+    "timing": "morning",
+    "timingNote": "Take with food — absorption is higher with a meal",
+    "absorption": { "macro": "food", "macroLabel": "🍽️ With Food", "score": 85, "scoreLabel": "Excellent", "tip": "Food significantly improves absorption. Note: urine turns bright yellow — this is harmless." },
+    "conflicts": [],
+    "healthWarnings": [],
+    "doses": [
+      {"amount": 10, "unit": "mg", "label": "Low"},
+      {"amount": 25, "unit": "mg", "label": "Standard"},
+      {"amount": 100, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  // ── MINERALS (REMAINING) ─────────────────────────
+
+  {
+    "name": "Iodine",
+    "aliases": ["Potassium Iodide", "Iodide", "Lugol's Iodine", "Nascent Iodine"],
+    "category": "Mineral",
+    "emoji": "🫧",
+    "color": "#8b5cf6",
+    "timing": "morning",
+    "timingNote": "Take with morning meal",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 90, "scoreLabel": "Excellent", "tip": "Highly bioavailable. Essential for thyroid hormone synthesis. Do not exceed RDA without medical supervision." },
+    "conflicts": [
+      { "name": "Thyroid medication", "sev": "medium", "note": "Iodine directly affects thyroid hormone production — may alter levothyroxine requirements. Monitor TSH." }
+    ],
+    "healthWarnings": ["thyroid disorders", "Hashimoto's thyroiditis", "Graves' disease"],
+    "doses": [
+      {"amount": 150, "unit": "mcg", "label": "RDA"},
+      {"amount": 300, "unit": "mcg", "label": "Standard"},
+      {"amount": 500, "unit": "mcg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Copper",
+    "aliases": ["Copper Bisglycinate", "Cupric Glycinate", "Copper Gluconate"],
+    "category": "Mineral",
+    "emoji": "🟤",
+    "color": "#b45309",
+    "timing": "morning",
+    "timingNote": "Take with morning meal, away from Zinc",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 75, "scoreLabel": "Good", "tip": "Bisglycinate form is best absorbed. Do not take at the same time as Zinc — they compete for absorption." },
+    "conflicts": [
+      { "name": "Zinc", "sev": "medium", "note": "High-dose zinc chronically depletes copper. If supplementing Zinc >40mg/day long-term, add 1–2mg copper." }
+    ],
+    "healthWarnings": ["Wilson's disease (copper storage disorder)"],
+    "doses": [
+      {"amount": 1, "unit": "mg", "label": "Low"},
+      {"amount": 2, "unit": "mg", "label": "Standard"},
+      {"amount": 4, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Chromium",
+    "aliases": ["Chromium Picolinate", "Chromium GTF", "Chromium Polynicotinate"],
+    "category": "Mineral",
+    "emoji": "🔩",
+    "color": "#6b7280",
+    "timing": "anytime",
+    "timingNote": "Best taken with meals to support blood sugar regulation",
+    "absorption": { "macro": "carbs", "macroLabel": "🍞 With Carbs", "score": 70, "scoreLabel": "Good", "tip": "Picolinate form is best absorbed. Take with carbohydrate-containing meals for blood sugar support." },
+    "conflicts": [
+      { "name": "Metformin", "sev": "low", "note": "Both affect blood sugar — monitor glucose levels if combining" }
+    ],
+    "healthWarnings": ["diabetes (monitor blood sugar closely)"],
+    "doses": [
+      {"amount": 200, "unit": "mcg", "label": "Standard"},
+      {"amount": 400, "unit": "mcg", "label": "High"},
+      {"amount": 600, "unit": "mcg", "label": "⚠️ Max"}
+    ]
+  },
+
+  {
+    "name": "Potassium",
+    "aliases": ["Potassium Citrate", "Potassium Chloride", "Potassium Gluconate", "K+"],
+    "category": "Mineral / Electrolyte",
+    "emoji": "🍌",
+    "color": "#fbbf24",
+    "timing": "anytime",
+    "timingNote": "Take with food to reduce stomach upset",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 85, "scoreLabel": "Excellent", "tip": "Take with food. Supplements are capped at 99mg per dose by regulation — higher needs should come from food." },
+    "conflicts": [
+      { "name": "ACE inhibitors", "sev": "high", "note": "⚠️ MEDICATION: ACE inhibitors (e.g. lisinopril) raise blood potassium — supplementing risks dangerous hyperkalemia. Consult your doctor." },
+      { "name": "Spironolactone", "sev": "high", "note": "⚠️ MEDICATION: Potassium-sparing diuretic — combination risks hyperkalemia. Do not supplement without medical supervision." }
+    ],
+    "healthWarnings": ["kidney disease", "on ACE inhibitors", "on potassium-sparing diuretics"],
+    "doses": [
+      {"amount": 99, "unit": "mg", "label": "Standard"},
+      {"amount": 200, "unit": "mg", "label": "High"},
+      {"amount": 400, "unit": "mg", "label": "⚠️ Max"}
+    ]
+  },
+
+  // ── NOOTROPICS / BRAIN ────────────────────────────
+
+  {
+    "name": "5-HTP",
+    "aliases": ["5-Hydroxytryptophan", "Griffonia Seed Extract", "5HTP"],
+    "category": "Nootropic",
+    "emoji": "🧠",
+    "color": "#8b5cf6",
+    "timing": "evening",
+    "timingNote": "Best taken 30–60 min before bed — converts to serotonin then melatonin",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 80, "scoreLabel": "Good", "tip": "Crosses the blood-brain barrier easily. Taking with carbohydrates (low protein) may enhance brain uptake. Do not combine with antidepressants." },
+    "conflicts": [
+      { "name": "SSRIs", "sev": "high", "note": "⚠️ MEDICATION: Risk of serotonin syndrome — dangerous excess of serotonin. Absolute contraindication with SSRIs, SNRIs, MAOIs." },
+      { "name": "MAOIs", "sev": "high", "note": "⚠️ MEDICATION: Extremely dangerous combination — risk of serotonin syndrome. Never combine." },
+      { "name": "Melatonin", "sev": "low", "note": "5-HTP converts to serotonin → melatonin. Combining with melatonin may cause excessive sedation." }
+    ],
+    "healthWarnings": ["on any antidepressant medication", "SSRIs", "SNRIs", "MAOIs"],
+    "doses": [
+      {"amount": 50, "unit": "mg", "label": "Low"},
+      {"amount": 100, "unit": "mg", "label": "Standard"},
+      {"amount": 200, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Rhodiola Rosea",
+    "aliases": ["Rhodiola", "Arctic Root", "Golden Root", "Roseroot"],
+    "category": "Adaptogen",
+    "emoji": "🌸",
+    "color": "#f472b6",
+    "timing": "morning",
+    "timingNote": "Take in the morning or before stressful events — can be mildly stimulating",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 78, "scoreLabel": "Good", "tip": "Standardised to 3% rosavins and 1% salidroside for best effect. Avoid evening use as it may interfere with sleep." },
+    "conflicts": [],
+    "healthWarnings": ["bipolar disorder (may trigger mania at high doses)"],
+    "doses": [
+      {"amount": 100, "unit": "mg", "label": "Low"},
+      {"amount": 200, "unit": "mg", "label": "Standard"},
+      {"amount": 500, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Panax Ginseng",
+    "aliases": ["Korean Ginseng", "Asian Ginseng", "Red Ginseng", "Ginseng"],
+    "category": "Adaptogen",
+    "emoji": "🌿",
+    "color": "#84cc16",
+    "timing": "morning",
+    "timingNote": "Take in the morning — mildly stimulating",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 75, "scoreLabel": "Good", "tip": "Standardised to ≥4% ginsenosides for reliable effect. Cycle with breaks (8 weeks on, 2 weeks off) to avoid tolerance." },
+    "conflicts": [
+      { "name": "Warfarin", "sev": "medium", "note": "May alter warfarin effectiveness — monitor INR with your doctor" },
+      { "name": "MAOIs", "sev": "medium", "note": "⚠️ MEDICATION: May cause headache, tremors, mania. Avoid combination." }
+    ],
+    "healthWarnings": ["on blood thinners", "hormone-sensitive conditions"],
+    "doses": [
+      {"amount": 200, "unit": "mg", "label": "Low"},
+      {"amount": 400, "unit": "mg", "label": "Standard"},
+      {"amount": 1000, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Bacopa Monnieri",
+    "aliases": ["Bacopa", "Brahmi", "Water Hyssop", "Bacopa Extract"],
+    "category": "Nootropic",
+    "emoji": "🧠",
+    "color": "#06b6d4",
+    "timing": "morning",
+    "timingNote": "Take with morning meal — fat improves absorption",
+    "absorption": { "macro": "fat", "macroLabel": "🥑 With Fat", "score": 80, "scoreLabel": "Good", "tip": "Fat significantly boosts absorption. Effects on memory build over 8–12 weeks of consistent use — not an acute nootropic." },
+    "conflicts": [],
+    "healthWarnings": ["can cause GI upset — take with food"],
+    "doses": [
+      {"amount": 150, "unit": "mg", "label": "Low"},
+      {"amount": 300, "unit": "mg", "label": "Standard"},
+      {"amount": 600, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Ginkgo Biloba",
+    "aliases": ["Ginkgo", "Maidenhair Tree", "Ginkgo Extract", "EGb 761"],
+    "category": "Nootropic",
+    "emoji": "🍃",
+    "color": "#84cc16",
+    "timing": "morning",
+    "timingNote": "Take with morning meal",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 75, "scoreLabel": "Good", "tip": "Standardised extract (24% flavonol glycosides, 6% terpene lactones) is the studied form. Effects on circulation and cognition take 4–6 weeks." },
+    "conflicts": [
+      { "name": "Warfarin", "sev": "high", "note": "⚠️ MEDICATION: Ginkgo has antiplatelet effects and can enhance warfarin — risk of bleeding. Tell your doctor." },
+      { "name": "Aspirin", "sev": "medium", "note": "Both reduce platelet aggregation — additive bleeding risk at high doses" }
+    ],
+    "healthWarnings": ["on anticoagulants", "scheduled for surgery (stop 2 weeks before)", "seizure disorders"],
+    "doses": [
+      {"amount": 60, "unit": "mg", "label": "Low"},
+      {"amount": 120, "unit": "mg", "label": "Standard"},
+      {"amount": 240, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Phosphatidylserine",
+    "aliases": ["PS", "Brain PS", "Sharp-PS"],
+    "category": "Nootropic",
+    "emoji": "🧠",
+    "color": "#6366f1",
+    "timing": "morning",
+    "timingNote": "Take with morning meal — fat improves absorption",
+    "absorption": { "macro": "fat", "macroLabel": "🥑 With Fat", "score": 82, "scoreLabel": "Excellent", "tip": "Fat-soluble phospholipid — always take with a meal. Well studied for cortisol reduction and memory in aging." },
+    "conflicts": [],
+    "healthWarnings": [],
+    "doses": [
+      {"amount": 100, "unit": "mg", "label": "Low"},
+      {"amount": 200, "unit": "mg", "label": "Standard"},
+      {"amount": 400, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Inositol",
+    "aliases": ["Myo-Inositol", "D-Chiro-Inositol", "Inositol Powder"],
+    "category": "Nootropic",
+    "emoji": "🫧",
+    "color": "#c4b5fd",
+    "timing": "morning",
+    "timingNote": "Can be taken any time; morning preferred for anxiety/mood support",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 80, "scoreLabel": "Good", "tip": "Powder form mixes well in water. Myo-inositol is the most studied form for PCOS, anxiety, and OCD. Higher doses (up to 18g) used clinically for panic disorder." },
+    "conflicts": [],
+    "healthWarnings": [],
+    "doses": [
+      {"amount": 500, "unit": "mg", "label": "Low"},
+      {"amount": 2000, "unit": "mg", "label": "Standard"},
+      {"amount": 4000, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Choline",
+    "aliases": ["Choline Bitartrate", "Choline Chloride", "CDP-Choline precursor"],
+    "category": "Nootropic",
+    "emoji": "🧠",
+    "color": "#a78bfa",
+    "timing": "morning",
+    "timingNote": "Take with morning meal",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 80, "scoreLabel": "Good", "tip": "Choline bitartrate is cost-effective. Pairs well with racetams. Bitartrate has lower brain delivery vs CDP-Choline or Alpha-GPC — see those if brain effect is the goal." },
+    "conflicts": [],
+    "healthWarnings": ["trimethylaminuria (fish odour syndrome) — avoid high choline"],
+    "doses": [
+      {"amount": 250, "unit": "mg", "label": "Low"},
+      {"amount": 500, "unit": "mg", "label": "Standard"},
+      {"amount": 1000, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "PQQ",
+    "aliases": ["Pyrroloquinoline Quinone", "BioPQQ", "PQQ Disodium Salt"],
+    "category": "Antioxidant",
+    "emoji": "⚡",
+    "color": "#f97316",
+    "timing": "morning",
+    "timingNote": "Take with morning meal",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 80, "scoreLabel": "Good", "tip": "Well absorbed. Often stacked with CoQ10 for mitochondrial synergy — PQQ promotes new mitochondria growth, CoQ10 fuels existing ones." },
+    "conflicts": [],
+    "pairsWith": "CoQ10",
+    "pairsNote": "PQQ + CoQ10 is a well-studied mitochondrial support stack.",
+    "healthWarnings": [],
+    "doses": [
+      {"amount": 10, "unit": "mg", "label": "Standard"},
+      {"amount": 20, "unit": "mg", "label": "High"},
+      {"amount": 40, "unit": "mg", "label": "Max"}
+    ]
+  },
+
+  // ── LONGEVITY ─────────────────────────────────────
+
+  {
+    "name": "NMN",
+    "aliases": ["Nicotinamide Mononucleotide", "β-NMN", "NMN Powder"],
+    "category": "Longevity",
+    "emoji": "🔬",
+    "color": "#14b8a6",
+    "timing": "morning",
+    "timingNote": "Take in the morning — NAD+ precursor supports daytime energy metabolism",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 85, "scoreLabel": "Excellent", "tip": "Sublingual or oral both work. Sublingual may have faster uptake. Avoid evening use as it may be mildly stimulating." },
+    "conflicts": [],
+    "pairsWith": "Resveratrol",
+    "pairsNote": "Resveratrol activates sirtuins; NMN provides the NAD+ fuel — commonly paired in longevity protocols.",
+    "healthWarnings": [],
+    "doses": [
+      {"amount": 250, "unit": "mg", "label": "Low"},
+      {"amount": 500, "unit": "mg", "label": "Standard"},
+      {"amount": 1000, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "NR (Nicotinamide Riboside)",
+    "aliases": ["Nicotinamide Riboside", "NR", "Niagen", "TRU NIAGEN"],
+    "category": "Longevity",
+    "emoji": "🔬",
+    "color": "#0ea5e9",
+    "timing": "morning",
+    "timingNote": "Take in the morning — NAD+ precursor, mildly energising",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 80, "scoreLabel": "Good", "tip": "Alternative to NMN for raising NAD+ levels. Both pathways converge; NR is generally lower cost." },
+    "conflicts": [],
+    "healthWarnings": [],
+    "doses": [
+      {"amount": 150, "unit": "mg", "label": "Low"},
+      {"amount": 300, "unit": "mg", "label": "Standard"},
+      {"amount": 500, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Resveratrol",
+    "aliases": ["Trans-Resveratrol", "Resveratrol Extract", "Polygonum Cuspidatum"],
+    "category": "Antioxidant / Longevity",
+    "emoji": "🍇",
+    "color": "#7c3aed",
+    "timing": "morning",
+    "timingNote": "Take with morning meal — fat improves absorption",
+    "absorption": { "macro": "fat", "macroLabel": "🥑 With Fat", "score": 75, "scoreLabel": "Good", "tip": "Poor standalone bioavailability — fat or piperine improves it significantly. Trans-resveratrol is the active form. Micronised or liposomal forms absorb best." },
+    "conflicts": [
+      { "name": "Warfarin", "sev": "medium", "note": "May have mild antiplatelet effect — monitor INR if on anticoagulants" }
+    ],
+    "healthWarnings": ["hormone-sensitive conditions (weakly estrogenic at high doses)"],
+    "doses": [
+      {"amount": 100, "unit": "mg", "label": "Low"},
+      {"amount": 250, "unit": "mg", "label": "Standard"},
+      {"amount": 500, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Quercetin",
+    "aliases": ["Quercetin Dihydrate", "Quercetin Phytosome", "Quercetin + Bromelain"],
+    "category": "Antioxidant",
+    "emoji": "🍎",
+    "color": "#f87171",
+    "timing": "morning",
+    "timingNote": "Take with morning meal — fat improves absorption",
+    "absorption": { "macro": "fat", "macroLabel": "🥑 With Fat", "score": 70, "scoreLabel": "Good", "tip": "Phytosome form (quercetin + phospholipids) absorbs 20× better than standard. Often stacked with Zinc as an ionophore to push zinc into cells." },
+    "conflicts": [],
+    "pairsWith": "Zinc",
+    "pairsNote": "Quercetin acts as a zinc ionophore — helps transport zinc into cells.",
+    "healthWarnings": [],
+    "doses": [
+      {"amount": 250, "unit": "mg", "label": "Low"},
+      {"amount": 500, "unit": "mg", "label": "Standard"},
+      {"amount": 1000, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Alpha Lipoic Acid (ALA)",
+    "aliases": ["ALA", "Thioctic Acid", "R-ALA", "R-Alpha Lipoic Acid", "Alpha Lipoic Acid"],
+    "category": "Antioxidant",
+    "emoji": "🔄",
+    "color": "#fb923c",
+    "timing": "morning",
+    "timingNote": "Take on empty stomach or 30 min before a meal — food reduces absorption",
+    "absorption": { "macro": "empty", "macroLabel": "⭕ Empty Stomach", "score": 85, "scoreLabel": "Excellent", "tip": "Food significantly reduces ALA absorption. R-ALA (R-form only) is more potent than racemic ALA at half the dose. Regenerates vitamins C and E." },
+    "conflicts": [
+      { "name": "Thyroid medication", "sev": "low", "note": "May slightly reduce absorption of thyroid medication — take 2–4 h apart" }
+    ],
+    "healthWarnings": ["hypoglycemia risk in diabetics — monitor blood sugar"],
+    "doses": [
+      {"amount": 100, "unit": "mg", "label": "Low"},
+      {"amount": 300, "unit": "mg", "label": "Standard"},
+      {"amount": 600, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "TMG (Trimethylglycine)",
+    "aliases": ["Betaine", "Betaine Anhydrous", "Trimethylglycine", "TMG"],
+    "category": "Methylation Support",
+    "emoji": "🔵",
+    "color": "#3b82f6",
+    "timing": "morning",
+    "timingNote": "Take with morning meal",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 80, "scoreLabel": "Good", "tip": "Donates methyl groups, supporting homocysteine metabolism and liver health. Also used by athletes (betaine anhydrous) for strength — same compound." },
+    "conflicts": [],
+    "pairsWith": "Folate (Vitamin B9)",
+    "pairsNote": "Works synergistically with folate and B12 in the methylation cycle.",
+    "healthWarnings": [],
+    "doses": [
+      {"amount": 500, "unit": "mg", "label": "Low"},
+      {"amount": 1000, "unit": "mg", "label": "Standard"},
+      {"amount": 2500, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  // ── SLEEP / RELAXATION ───────────────────────────
+
+  {
+    "name": "Valerian Root",
+    "aliases": ["Valerian", "Valeriana Officinalis", "Valerian Extract"],
+    "category": "Sleep / Relaxation",
+    "emoji": "😴",
+    "color": "#818cf8",
+    "timing": "evening",
+    "timingNote": "Take 30–60 min before bed",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 72, "scoreLabel": "Good", "tip": "Effects build over 2–4 weeks of regular use — less effective as an acute sleep aid on the first night. Mild GABA-enhancing properties." },
+    "conflicts": [
+      { "name": "Sedatives", "sev": "high", "note": "⚠️ MEDICATION: Additive CNS depression — dangerous with benzodiazepines, z-drugs, and prescription sedatives" },
+      { "name": "Alcohol", "sev": "medium", "note": "Additive sedation — avoid alcohol when using valerian" }
+    ],
+    "healthWarnings": ["on prescription sleep medication", "operating heavy machinery"],
+    "doses": [
+      {"amount": 300, "unit": "mg", "label": "Low"},
+      {"amount": 450, "unit": "mg", "label": "Standard"},
+      {"amount": 900, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "L-Tryptophan",
+    "aliases": ["Tryptophan", "L-Trp", "Tryptophan Powder"],
+    "category": "Sleep / Nootropic",
+    "emoji": "😴",
+    "color": "#a78bfa",
+    "timing": "evening",
+    "timingNote": "Take 30–60 min before bed on an empty stomach or with carbohydrates (no protein)",
+    "absorption": { "macro": "carbs", "macroLabel": "🍞 With Carbs", "score": 78, "scoreLabel": "Good", "tip": "Protein blocks brain uptake — carbohydrates improve it by clearing competing amino acids. Converts to serotonin then melatonin. Do not combine with antidepressants." },
+    "conflicts": [
+      { "name": "SSRIs", "sev": "high", "note": "⚠️ MEDICATION: Risk of serotonin syndrome with SSRIs, SNRIs, MAOIs — absolute contraindication" },
+      { "name": "MAOIs", "sev": "high", "note": "⚠️ MEDICATION: Extremely dangerous — risk of serotonin syndrome. Never combine." }
+    ],
+    "healthWarnings": ["on antidepressants of any kind"],
+    "doses": [
+      {"amount": 500, "unit": "mg", "label": "Low"},
+      {"amount": 1000, "unit": "mg", "label": "Standard"},
+      {"amount": 2000, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Lemon Balm",
+    "aliases": ["Melissa Officinalis", "Lemon Balm Extract", "Melissa Extract"],
+    "category": "Sleep / Relaxation",
+    "emoji": "🍋",
+    "color": "#a3e635",
+    "timing": "evening",
+    "timingNote": "Take 30–60 min before bed, or during the day for anxiety",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 72, "scoreLabel": "Good", "tip": "Gentle GABA-enhancing herb. Often combined with valerian for synergistic sleep effect." },
+    "conflicts": [],
+    "pairsWith": "Valerian Root",
+    "pairsNote": "Lemon balm + valerian is a well-researched combination for sleep quality.",
+    "healthWarnings": ["hypothyroidism (may reduce thyroid hormone levels at high doses)"],
+    "doses": [
+      {"amount": 300, "unit": "mg", "label": "Standard"},
+      {"amount": 600, "unit": "mg", "label": "High"},
+      {"amount": 1200, "unit": "mg", "label": "Max"}
+    ]
+  },
+
+  {
+    "name": "Glycine",
+    "aliases": ["L-Glycine", "Glycine Powder", "Glycine Amino Acid"],
+    "category": "Sleep / Recovery",
+    "emoji": "😴",
+    "color": "#c4b5fd",
+    "timing": "evening",
+    "timingNote": "Take before bed — lowers core body temperature, improving sleep quality",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 85, "scoreLabel": "Excellent", "tip": "Highly bioavailable. 3g before bed reduces sleep latency and improves sleep quality. Also a collagen precursor and inhibitory neurotransmitter in the brainstem." },
+    "conflicts": [],
+    "pairsWith": "Collagen",
+    "pairsNote": "Glycine is the most abundant amino acid in collagen — pairs naturally for joint and skin support.",
+    "healthWarnings": [],
+    "doses": [
+      {"amount": 1000, "unit": "mg", "label": "Low"},
+      {"amount": 2000, "unit": "mg", "label": "Standard"},
+      {"amount": 3000, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  // ── ANTIOXIDANTS / IMMUNE ────────────────────────
+
+  {
+    "name": "Astaxanthin",
+    "aliases": ["Astaxanthin Extract", "Haematococcus Pluvialis", "AstaReal"],
+    "category": "Antioxidant",
+    "emoji": "🦐",
+    "color": "#fb7185",
+    "timing": "morning",
+    "timingNote": "Take with morning meal — highly fat-soluble",
+    "absorption": { "macro": "fat", "macroLabel": "🥑 With Fat", "score": 88, "scoreLabel": "Excellent", "tip": "One of the most powerful antioxidants known. Fat is essential for absorption. Natural (algae-derived) form is 20× more potent than synthetic." },
+    "conflicts": [],
+    "healthWarnings": [],
+    "doses": [
+      {"amount": 4, "unit": "mg", "label": "Standard"},
+      {"amount": 8, "unit": "mg", "label": "High"},
+      {"amount": 12, "unit": "mg", "label": "Max"}
+    ]
+  },
+
+  {
+    "name": "Green Tea Extract (EGCG)",
+    "aliases": ["EGCG", "Green Tea Extract", "Camellia Sinensis", "Green Tea Catechins"],
+    "category": "Antioxidant",
+    "emoji": "🍵",
+    "color": "#4ade80",
+    "timing": "morning",
+    "timingNote": "Take in the morning — contains caffeine; avoid evening use",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 80, "scoreLabel": "Good", "tip": "Decaf extract available if caffeine-sensitive. EGCG content varies widely — look for standardised extracts (≥45% EGCG). Avoid very high doses (>800mg EGCG/day) due to liver safety signals." },
+    "conflicts": [
+      { "name": "Iron", "sev": "medium", "note": "EGCG binds non-heme iron, reducing absorption by up to 25% — separate from iron supplements by 2 h" },
+      { "name": "Warfarin", "sev": "low", "note": "Contains small amounts of Vitamin K — very large doses may affect INR" }
+    ],
+    "healthWarnings": ["liver disease (avoid high doses >800mg EGCG)", "iron deficiency anaemia"],
+    "doses": [
+      {"amount": 200, "unit": "mg", "label": "Low"},
+      {"amount": 400, "unit": "mg", "label": "Standard"},
+      {"amount": 800, "unit": "mg", "label": "⚠️ Max"}
+    ]
+  },
+
+  {
+    "name": "Elderberry",
+    "aliases": ["Sambucus Nigra", "Elderberry Extract", "Black Elderberry", "Sambucol"],
+    "category": "Immune Support",
+    "emoji": "🫐",
+    "color": "#7c3aed",
+    "timing": "morning",
+    "timingNote": "Take with morning meal",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 78, "scoreLabel": "Good", "tip": "Used short-term for acute illness. May shorten cold/flu duration. Raw elderberries are toxic — always use standardised extract." },
+    "conflicts": [],
+    "healthWarnings": ["autoimmune conditions (may stimulate immune activity — caution with immunosuppressants)"],
+    "doses": [
+      {"amount": 300, "unit": "mg", "label": "Standard"},
+      {"amount": 600, "unit": "mg", "label": "High"},
+      {"amount": 1200, "unit": "mg", "label": "Acute (illness)"}
+    ]
+  },
+
+  {
+    "name": "Echinacea",
+    "aliases": ["Echinacea Purpurea", "Purple Coneflower", "Echinacea Angustifolia"],
+    "category": "Immune Support",
+    "emoji": "🌸",
+    "color": "#f472b6",
+    "timing": "morning",
+    "timingNote": "Use short-term at onset of illness (max 10–14 days continuous use)",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 72, "scoreLabel": "Good", "tip": "Not intended for daily long-term use — cycle off after 10–14 days. Most effective taken at first sign of illness." },
+    "conflicts": [
+      { "name": "Immunosuppressants", "sev": "medium", "note": "⚠️ MEDICATION: May counter immunosuppressant drugs (cyclosporine, tacrolimus) — consult doctor" }
+    ],
+    "healthWarnings": ["ragweed/daisy allergy (cross-reactivity)", "autoimmune diseases", "on immunosuppressants"],
+    "doses": [
+      {"amount": 300, "unit": "mg", "label": "Standard"},
+      {"amount": 500, "unit": "mg", "label": "High"},
+      {"amount": 1000, "unit": "mg", "label": "Acute"}
+    ]
+  },
+
+  {
+    "name": "Spirulina",
+    "aliases": ["Blue-Green Algae", "Arthrospira Platensis", "Spirulina Powder"],
+    "category": "Superfood",
+    "emoji": "💚",
+    "color": "#22c55e",
+    "timing": "morning",
+    "timingNote": "Take with morning meal or blend into smoothie",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 82, "scoreLabel": "Excellent", "tip": "Highly bioavailable protein source (60–70% protein by weight). Rich in iron and B vitamins. Quality matters — buy from tested, contamination-verified sources." },
+    "conflicts": [
+      { "name": "Immunosuppressants", "sev": "medium", "note": "May stimulate immune function — use with caution if on immunosuppressants" }
+    ],
+    "healthWarnings": ["phenylketonuria (PKU)", "autoimmune conditions"],
+    "doses": [
+      {"amount": 1000, "unit": "mg", "label": "Low"},
+      {"amount": 3000, "unit": "mg", "label": "Standard"},
+      {"amount": 5000, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Chlorella",
+    "aliases": ["Chlorella Vulgaris", "Green Algae", "Chlorella Pyrenoidosa", "Chlorella Powder"],
+    "category": "Superfood",
+    "emoji": "🟢",
+    "color": "#16a34a",
+    "timing": "morning",
+    "timingNote": "Take with morning meal",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 78, "scoreLabel": "Good", "tip": "Cell wall must be broken/cracked for nutrient absorption. Binds to heavy metals in the gut — often used for detox. May cause loose stools initially — start low." },
+    "conflicts": [],
+    "healthWarnings": ["iodine-sensitive individuals (contains iodine)", "autoimmune conditions"],
+    "doses": [
+      {"amount": 1000, "unit": "mg", "label": "Low"},
+      {"amount": 3000, "unit": "mg", "label": "Standard"},
+      {"amount": 6000, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  // ── JOINT SUPPORT ────────────────────────────────
+
+  {
+    "name": "Glucosamine",
+    "aliases": ["Glucosamine Sulfate", "Glucosamine HCl", "Glucosamine Hydrochloride"],
+    "category": "Joint Support",
+    "emoji": "🦴",
+    "color": "#d97706",
+    "timing": "morning",
+    "timingNote": "Take with morning meal",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 75, "scoreLabel": "Good", "tip": "Sulfate form is better studied than HCl. Effects on joint pain require 8–12 weeks. Often combined with chondroitin." },
+    "conflicts": [
+      { "name": "Warfarin", "sev": "medium", "note": "May enhance warfarin effect — monitor INR with your doctor" }
+    ],
+    "pairsWith": "Chondroitin",
+    "pairsNote": "Glucosamine + Chondroitin is the classic joint support combination.",
+    "healthWarnings": ["shellfish allergy (most glucosamine is shellfish-derived — check label)", "diabetes (may affect blood sugar)"],
+    "doses": [
+      {"amount": 500, "unit": "mg", "label": "Low"},
+      {"amount": 750, "unit": "mg", "label": "Standard"},
+      {"amount": 1500, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Chondroitin",
+    "aliases": ["Chondroitin Sulfate", "Chondroitin Sulphate"],
+    "category": "Joint Support",
+    "emoji": "🦴",
+    "color": "#b45309",
+    "timing": "morning",
+    "timingNote": "Take with morning meal",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 70, "scoreLabel": "Good", "tip": "Absorption is variable and debated — pairs synergistically with glucosamine for cartilage support. Results take weeks to months." },
+    "conflicts": [],
+    "pairsWith": "Glucosamine",
+    "pairsNote": "Classic combination for cartilage and joint health.",
+    "healthWarnings": [],
+    "doses": [
+      {"amount": 400, "unit": "mg", "label": "Low"},
+      {"amount": 800, "unit": "mg", "label": "Standard"},
+      {"amount": 1200, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "MSM",
+    "aliases": ["Methylsulfonylmethane", "Dimethyl Sulfone", "Organic Sulfur", "OptiMSM"],
+    "category": "Joint Support",
+    "emoji": "🔩",
+    "color": "#e5e7eb",
+    "timing": "morning",
+    "timingNote": "Take with morning meal",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 80, "scoreLabel": "Good", "tip": "Bioavailable sulfur source. Reduces joint inflammation and supports collagen synthesis. Often combined with glucosamine and chondroitin." },
+    "conflicts": [],
+    "healthWarnings": [],
+    "doses": [
+      {"amount": 500, "unit": "mg", "label": "Low"},
+      {"amount": 1500, "unit": "mg", "label": "Standard"},
+      {"amount": 3000, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Hyaluronic Acid",
+    "aliases": ["Sodium Hyaluronate", "HA", "Hyaluron", "Hyaluronan"],
+    "category": "Joint / Skin",
+    "emoji": "💧",
+    "color": "#38bdf8",
+    "timing": "morning",
+    "timingNote": "Take with morning meal",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 72, "scoreLabel": "Good", "tip": "Oral HA improves joint lubrication and skin hydration. Low molecular weight HA absorbs better orally. Topical vs oral serve different purposes." },
+    "conflicts": [],
+    "healthWarnings": [],
+    "doses": [
+      {"amount": 100, "unit": "mg", "label": "Low"},
+      {"amount": 200, "unit": "mg", "label": "Standard"},
+      {"amount": 400, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  // ── AMINO ACIDS (REMAINING) ──────────────────────
+
+  {
+    "name": "L-Lysine",
+    "aliases": ["Lysine", "L-Lysine HCl", "Lysine Hydrochloride"],
+    "category": "Amino Acid",
+    "emoji": "🧬",
+    "color": "#67e8f9",
+    "timing": "morning",
+    "timingNote": "Take on empty stomach or with a low-protein meal for best uptake",
+    "absorption": { "macro": "empty", "macroLabel": "⭕ Empty Stomach", "score": 80, "scoreLabel": "Good", "tip": "Competes with arginine for absorption — separate from high-arginine foods/supplements. Used for cold sore prevention (herpes simplex) and collagen synthesis." },
+    "conflicts": [],
+    "pairsWith": "Vitamin C",
+    "pairsNote": "Vitamin C + Lysine work together for collagen synthesis.",
+    "healthWarnings": [],
+    "doses": [
+      {"amount": 500, "unit": "mg", "label": "Low"},
+      {"amount": 1000, "unit": "mg", "label": "Standard"},
+      {"amount": 3000, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "L-Arginine",
+    "aliases": ["Arginine", "L-Arginine HCl", "Arginine AKG", "AAKG"],
+    "category": "Amino Acid",
+    "emoji": "💪",
+    "color": "#f87171",
+    "timing": "morning",
+    "timingNote": "Take on empty stomach or 30–60 min before exercise",
+    "absorption": { "macro": "empty", "macroLabel": "⭕ Empty Stomach", "score": 75, "scoreLabel": "Good", "tip": "Precursor to nitric oxide (NO) — supports blood flow and pump. High oral doses often cause GI distress; L-Citrulline converts to arginine more efficiently with fewer GI side effects." },
+    "conflicts": [],
+    "pairsWith": "L-Citrulline",
+    "pairsNote": "Citrulline raises blood arginine levels more effectively than arginine itself.",
+    "healthWarnings": ["herpes simplex (may promote outbreaks — high arginine competes with lysine)", "recent heart attack"],
+    "doses": [
+      {"amount": 1000, "unit": "mg", "label": "Low"},
+      {"amount": 3000, "unit": "mg", "label": "Standard"},
+      {"amount": 6000, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  // ── MUSHROOMS (ADDITIONAL) ───────────────────────
+
+  {
+    "name": "Reishi Mushroom",
+    "aliases": ["Ganoderma Lucidum", "Lingzhi", "Reishi Extract"],
+    "category": "Mushroom / Adaptogen",
+    "emoji": "🍄",
+    "color": "#b45309",
+    "timing": "evening",
+    "timingNote": "Take in the evening — mild calming effect",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 75, "scoreLabel": "Good", "tip": "Dual-extract (hot water + alcohol) provides both beta-glucans and triterpenes — look for this on the label. Single extraction misses key compounds." },
+    "conflicts": [
+      { "name": "Warfarin", "sev": "medium", "note": "May enhance anticoagulant effect — monitor INR if on blood thinners" }
+    ],
+    "healthWarnings": ["on blood thinners", "scheduled surgery (stop 2 weeks before — antiplatelet effects)"],
+    "doses": [
+      {"amount": 500, "unit": "mg", "label": "Low"},
+      {"amount": 1000, "unit": "mg", "label": "Standard"},
+      {"amount": 2000, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Cordyceps",
+    "aliases": ["Cordyceps Sinensis", "Cordyceps Militaris", "Caterpillar Mushroom", "Cordyceps Extract"],
+    "category": "Mushroom / Performance",
+    "emoji": "🍄",
+    "color": "#f59e0b",
+    "timing": "morning",
+    "timingNote": "Take in the morning or before exercise — mildly energising",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 75, "scoreLabel": "Good", "tip": "Cordyceps Militaris (lab-grown) is more accessible and similarly effective to the rare Sinensis variety. Supports VO2 max and ATP production." },
+    "conflicts": [],
+    "healthWarnings": [],
+    "doses": [
+      {"amount": 500, "unit": "mg", "label": "Low"},
+      {"amount": 1000, "unit": "mg", "label": "Standard"},
+      {"amount": 3000, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  {
+    "name": "Chaga Mushroom",
+    "aliases": ["Inonotus Obliquus", "Chaga Extract", "Chaga Powder"],
+    "category": "Mushroom / Antioxidant",
+    "emoji": "🍄",
+    "color": "#78716c",
+    "timing": "morning",
+    "timingNote": "Take with morning meal",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 73, "scoreLabel": "Good", "tip": "Very high ORAC antioxidant value. Look for dual-extract. High oxalate content — those prone to kidney stones should use with caution." },
+    "conflicts": [],
+    "healthWarnings": ["kidney stones (high oxalate content)", "diabetes (may lower blood sugar)"],
+    "doses": [
+      {"amount": 500, "unit": "mg", "label": "Low"},
+      {"amount": 1000, "unit": "mg", "label": "Standard"},
+      {"amount": 2000, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  // ── ADAPTOGENS (ADDITIONAL) ──────────────────────
+
+  {
+    "name": "Shilajit",
+    "aliases": ["Shilajit Extract", "Mumijo", "Purified Shilajit", "Fulvic Acid Complex"],
+    "category": "Adaptogen",
+    "emoji": "🪨",
+    "color": "#78716c",
+    "timing": "morning",
+    "timingNote": "Take with morning meal",
+    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 78, "scoreLabel": "Good", "tip": "Purified form essential — raw/unpurified shilajit may contain heavy metals and pathogens. Rich in fulvic acid and dibenzo-alpha-pyrones." },
+    "conflicts": [],
+    "healthWarnings": ["gout (contains purines)", "raw/unpurified forms — only use lab-tested purified shilajit"],
+    "doses": [
+      {"amount": 100, "unit": "mg", "label": "Low"},
+      {"amount": 250, "unit": "mg", "label": "Standard"},
+      {"amount": 500, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  // ── MEN'S HEALTH ─────────────────────────────────
+
+  {
+    "name": "Saw Palmetto",
+    "aliases": ["Serenoa Repens", "Saw Palmetto Extract", "Saw Palmetto Berry"],
+    "category": "Men's Health",
+    "emoji": "🌴",
+    "color": "#15803d",
+    "timing": "morning",
+    "timingNote": "Take with morning meal — fat-soluble extract absorbs better with food",
+    "absorption": { "macro": "fat", "macroLabel": "🥑 With Fat", "score": 78, "scoreLabel": "Good", "tip": "Liposterolic extract (fat-soluble) is better than powdered berry. Commonly used for BPH and hair loss (DHT inhibition). Effects take 3–6 months." },
+    "conflicts": [
+      { "name": "Warfarin", "sev": "low", "note": "Mild antiplatelet effect — inform doctor if on blood thinners" },
+      { "name": "Finasteride", "sev": "low", "note": "Both inhibit 5-alpha reductase — additive DHT reduction; monitor for side effects" }
+    ],
+    "healthWarnings": ["hormone-sensitive conditions"],
+    "doses": [
+      {"amount": 160, "unit": "mg", "label": "Standard"},
+      {"amount": 320, "unit": "mg", "label": "High"},
+      {"amount": 640, "unit": "mg", "label": "Max"}
+    ]
+  },
+
+  // ── EYE HEALTH ───────────────────────────────────
+
+  {
+    "name": "Lutein & Zeaxanthin",
+    "aliases": ["Lutein", "Zeaxanthin", "Marigold Extract", "FloraGLO Lutein"],
+    "category": "Eye Health",
+    "emoji": "👁️",
+    "color": "#fbbf24",
+    "timing": "morning",
+    "timingNote": "Take with morning meal — fat-soluble carotenoids",
+    "absorption": { "macro": "fat", "macroLabel": "🥑 With Fat", "score": 85, "scoreLabel": "Excellent", "tip": "Fat is essential for absorption — always take with a meal. Protects macular pigment from blue light damage. Standard clinical dose: 10mg lutein + 2mg zeaxanthin." },
+    "conflicts": [],
+    "healthWarnings": [],
+    "doses": [
+      {"amount": 6, "unit": "mg", "label": "Low"},
+      {"amount": 10, "unit": "mg", "label": "Standard"},
+      {"amount": 20, "unit": "mg", "label": "High"}
+    ]
+  },
+
+  // ── LIVER SUPPORT ────────────────────────────────
+
+  {
+    "name": "Milk Thistle",
+    "aliases": ["Silymarin", "Silybum Marianum", "Milk Thistle Extract", "Silymarin Phosphatidylcholine Complex"],
+    "category": "Liver Support",
+    "emoji": "🌿",
+    "color": "#4ade80",
+    "timing": "morning",
+    "timingNote": "Take with morning meal — fat improves absorption",
+    "absorption": { "macro": "fat", "macroLabel": "🥑 With Fat", "score": 78, "scoreLabel": "Good", "tip": "Phytosome form (silymarin + phosphatidylcholine) has 4–10× better bioavailability than standard. Standard extracts should be 70–80% silymarin." },
+    "conflicts": [],
+    "healthWarnings": ["ragweed/daisy allergy (cross-reactivity possible)"],
+    "doses": [
+      {"amount": 150, "unit": "mg", "label": "Low"},
+      {"amount": 300, "unit": "mg", "label": "Standard"},
+      {"amount": 600, "unit": "mg", "label": "High"}
+    ]
   }
 
 ];
