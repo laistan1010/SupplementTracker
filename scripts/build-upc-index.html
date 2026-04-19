@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Build DSLD UPC Index</title>
+  <script src="../data/supplements.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 20px; background: #f8fafc; color: #1e293b; }
+    h1 { font-size: 20px; }
+    p  { font-size: 14px; color: #64748b; line-height: 1.5; }
+    button { padding: 10px 22px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    button:disabled { background: #a5b4fc; cursor: not-allowed; }
+    #progress { margin-top: 20px; background: #e2e8f0; border-radius: 8px; height: 8px; overflow: hidden; display: none; }
+    #bar { height: 100%; background: #6366f1; transition: width .3s; width: 0; }
+    #log { margin-top: 16px; font-size: 13px; font-family: monospace; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; max-height: 360px; overflow-y: auto; white-space: pre-wrap; }
+    .ok   { color: #16a34a; }
+    .info { color: #64748b; }
+    .done { color: #6366f1; font-weight: 700; }
+    .warn { color: #d97706; }
+  </style>
+</head>
+<body>
+
+<h1>🔨 Build DSLD UPC Index</h1>
+<p>
+  Searches NIH DSLD for all <strong id="suppCount"></strong> supplements in your database,
+  collects every product's barcode (UPC), and saves <code>dsld-upc-index.json</code>.<br>
+  Move that file to <code>data/</code> and commit — barcode scans will then work offline.
+</p>
+<p><strong>Takes ~5–10 minutes.</strong> Keep this tab open.</p>
+
+<button id="startBtn" onclick="buildIndex()">▶ Start</button>
+<div id="progress"><div id="bar"></div></div>
+<div id="log"></div>
+
+<script>
+document.getElementById('suppCount').textContent = SUPP_DB.length;
+
+const RESULTS_PER_SUPP = 60;   // labels to fetch per supplement
+const BATCH_SIZE       = 8;    // parallel label fetches
+const RETRY_DELAY_MS   = 800;  // pause between batches (rate-limit courtesy)
+
+let logEl, barEl, total, done;
+
+function log(msg, cls = 'info') {
+  logEl.innerHTML += `<span class="${cls}">${msg}</span>\n`;
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function setBar(pct) { barEl.style.width = pct + '%'; }
+
+async function buildIndex() {
+  const btn = document.getElementById('startBtn');
+  btn.disabled = true;
+  logEl  = document.getElementById('log');
+  barEl  = document.getElementById('bar');
+  document.getElementById('progress').style.display = '';
+  logEl.innerHTML = '';
+
+  const index = {};
+  const supps = SUPP_DB;
+  total = supps.length;
+  done  = 0;
+
+  for (let i = 0; i < supps.length; i++) {
+    const s = supps[i];
+    log(`[${i + 1}/${total}] ${s.emoji || '💊'} ${s.name} …`);
+
+    // 1 — search for label IDs
+    const ids = await searchLabelIds(s.name);
+    log(`  → ${ids.length} labels found`, 'info');
+
+    // also search aliases if few results
+    if (ids.length < 5 && s.aliases?.length) {
+      for (const alias of s.aliases.slice(0, 2)) {
+        const more = await searchLabelIds(alias);
+        more.forEach(id => { if (!ids.includes(id)) ids.push(id); });
+      }
+      if (ids.length > (await searchLabelIds(s.name)).length)
+        log(`  → +alias search: ${ids.length} total`, 'info');
+    }
+
+    // 2 — fetch each label for upcSku in batches
+    let found = 0;
+    for (let b = 0; b < ids.length; b += BATCH_SIZE) {
+      const batch = ids.slice(b, b + BATCH_SIZE);
+      const results = await Promise.all(batch.map(id => fetchLabelUpc(id)));
+      results.forEach(r => {
+        if (r.upc) { index[r.upc] = r.id; found++; }
+      });
+      await sleep(RETRY_DELAY_MS);
+    }
+
+    log(`  ✓ ${found} UPCs indexed`, 'ok');
+    done++;
+    setBar(Math.round((done / total) * 100));
+  }
+
+  const count = Object.keys(index).length;
+  log(`\n✅ Done! ${count} UPCs across ${total} supplement types.`, 'done');
+  log(`Downloading dsld-upc-index.json …`, 'done');
+  downloadJSON(index, 'dsld-upc-index.json');
+  btn.disabled = false;
+  btn.textContent = '▶ Run Again';
+}
+
+async function searchLabelIds(q) {
+  try {
+    const url = `https://api.ods.od.nih.gov/dsld/v9/search-filter?q=${encodeURIComponent(q)}&size=${RESULTS_PER_SUPP}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    return (data.hits || []).map(h => h._id);
+  } catch { return []; }
+}
+
+async function fetchLabelUpc(id) {
+  try {
+    const res = await fetch(`https://api.ods.od.nih.gov/dsld/v9/label/${id}`);
+    const d   = await res.json();
+    const upc = (d.upcSku || '').replace(/\D/g, '');
+    return { id, upc };
+  } catch { return { id, upc: '' }; }
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function downloadJSON(obj, filename) {
+  const blob = new Blob([JSON.stringify(obj)], { type: 'application/json' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+</script>
+</body>
+</html>

@@ -2767,6 +2767,17 @@ function barcodePickFile() {
   document.getElementById('barcodeFileInput')?.click();
 }
 
+// UPC index loaded once on first scan
+let _upcIndex = null;
+async function loadUpcIndex() {
+  if (_upcIndex !== null) return _upcIndex;
+  try {
+    const res = await fetch('data/dsld-upc-index.json');
+    _upcIndex = await res.json();
+  } catch { _upcIndex = {}; }
+  return _upcIndex;
+}
+
 async function barcodeHandleFile(input) {
   const file = input.files?.[0];
   if (!file) return;
@@ -2774,6 +2785,7 @@ async function barcodeHandleFile(input) {
 
   const btn    = document.getElementById('scanBtn');
   const status = document.getElementById('dsldStatus');
+  const spin   = document.getElementById('dsldSpinner');
   const dsldIn = document.getElementById('dsldInput');
 
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Reading barcode…'; }
@@ -2782,39 +2794,53 @@ async function barcodeHandleFile(input) {
   try {
     const upc = await barcodeDecodeFile(file);
     if (btn) btn.textContent = '⏳ Looking up product…';
+    if (spin) spin.style.display = '';
 
-    const productName = await barcodeToProductName(upc);
-    if (!productName) throw new Error('not_found');
+    const index   = await loadUpcIndex();
+    const labelId = index[upc] || null;
 
-    if (dsldIn) dsldIn.value = productName;
+    if (!labelId) throw new Error('not_found');
+
+    // Direct DSLD fetch — no OFF needed
+    const res   = await fetch(`https://api.ods.od.nih.gov/dsld/v9/label/${labelId}`);
+    if (!res.ok) throw new Error('not_found');
+    const label = await res.json();
+    if (spin) spin.style.display = 'none';
     if (btn) { btn.disabled = false; btn.innerHTML = '📷 Scan Barcode'; }
-    await dsldSearch(productName);
+
+    const productName = `${label.fullName || ''} — ${label.brandName || ''}`.trim();
+    if (dsldIn) dsldIn.value = productName;
+
+    const rows    = label.ingredientRows || [];
+    const matches = dsldMatchIngredients(rows);
+
+    if (matches.length === 0) {
+      if (status) { status.textContent = 'No matching supplements in this product'; status.style.color = 'var(--text-muted)'; status.style.display = ''; }
+    } else if (matches.length === 1) {
+      dsldApplyMatch(matches[0]);
+    } else {
+      dsldShowMultiModal(matches, label.fullName || productName);
+    }
 
   } catch(e) {
+    if (spin) spin.style.display = 'none';
     if (btn) { btn.disabled = false; btn.innerHTML = '📷 Scan Barcode'; }
     const msg = e.message === 'not_found'
-      ? '❌ Product not found — try searching by name'
+      ? '❌ Not in index — search by name, or run scripts/build-upc-index.html to update'
       : '❌ Couldn\'t read barcode — try searching by name';
     if (status) { status.textContent = msg; status.style.color = 'var(--text-muted)'; status.style.display = ''; }
   }
 }
 
 async function barcodeDecodeFile(file) {
-  const hints = new Map();
-  const reader = new ZXing.BrowserMultiFormatReader(hints);
+  const reader = new ZXing.BrowserMultiFormatReader();
   const imgUrl = URL.createObjectURL(file);
   try {
     const result = await reader.decodeFromImageUrl(imgUrl);
-    return result.getText();
+    return result.getText().replace(/\D/g, ''); // digits only
   } finally {
     URL.revokeObjectURL(imgUrl);
   }
-}
-
-async function barcodeToProductName(upc) {
-  const res  = await fetch(`https://world.openfoodfacts.org/api/v2/product/${upc}.json?fields=product_name`);
-  const data = await res.json();
-  return data.status === 1 ? (data.product?.product_name || null) : null;
 }
 
 // ════════════════════════════════════════════════════
