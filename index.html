@@ -2002,18 +2002,6 @@ function vLog() {
         </div>
       </div>
 
-      <div class="form-group" style="margin-bottom:12px">
-        <label>Search product label <span style="font-weight:400;color:var(--text-muted)">(optional — auto-fills supplement &amp; dose)</span></label>
-        <div class="ta-wrap">
-          <input id="dsldInput" type="text" autocomplete="off"
-            placeholder="e.g. Life Extension Two-Per-Day, NOW Magnesium…"
-            oninput="dsldHandleInput(this.value)">
-          <span id="dsldSpinner" class="dsld-spinner" style="display:none">⏳</span>
-          <div id="dsldDropdown" class="ta-dropdown"></div>
-        </div>
-        <div id="dsldStatus" style="font-size:12px;margin-top:5px;display:none"></div>
-      </div>
-
       <div id="sup-info">${renderSupInfo(sel)}</div>
 
       <div id="dose-section">${renderDoseSection(sel, lf)}</div>
