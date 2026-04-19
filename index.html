@@ -263,7 +263,7 @@
 
     /* ── FORM ── */
     .form-group { margin-bottom: 16px; }
-    .form-group label { display:block; font-size:13px; font-weight:600; color:var(--text); margin-bottom:5px; }
+    .form-group label { display:block; font-size:14px; font-weight:700; color:var(--text); margin-bottom:6px; }
     .form-group input, .form-group select, .form-group textarea {
       width:100%; padding:9px 12px;
       border:1.5px solid var(--border); border-radius:8px;
@@ -1785,9 +1785,9 @@ function renderDoseSection(sup, lf) {
     return `
       <div class="form-group">
         <label class="dose-section-label">Dose (optional)</label>
-        <div style="padding:12px 14px;background:#f8fafc;border:1.5px dashed #d1d5db;border-radius:10px;
+        <div style="padding:10px 14px;background:#f8fafc;border:1.5px dashed #d1d5db;border-radius:10px;
           color:var(--text-muted);font-size:13px;text-align:center">
-          👆 Select a supplement above to see common dose options
+          ↑ Pick a supplement to see doses
         </div>
       </div>`;
   }
@@ -1822,7 +1822,7 @@ function renderDoseSection(sup, lf) {
     if (isActive) cls += ' active';
     return `<button type="button" class="${cls}"
       onclick="pickDose(${d.amount},'${d.unit}',this)"
-      title="${d.label}">${d.label} — ${d.amount} ${d.unit}</button>`;
+      title="${d.label}">${d.amount} ${d.unit}${d.label.includes('⚠️')?' ⚠️':''}</button>`;
   }).join('');
 
   const customActiveCls = isCustomActive ? ' active' : '';
@@ -1834,7 +1834,7 @@ function renderDoseSection(sup, lf) {
       <div class="dose-chips" id="doseChipRow">
         ${chipsHtml}
         <button type="button" class="dose-chip custom-chip${customActiveCls}" id="customChipBtn"
-          onclick="showCustomDose()">✏️ Custom</button>
+          onclick="showCustomDose()">✏️ Other</button>
       </div>
       <div class="custom-dose-row${customRowVis}" id="customDoseRow">
         <div class="form-group">
@@ -2019,7 +2019,7 @@ function vLog() {
   return `
     <div class="page-header">
       <h2>➕ Log Supplement</h2>
-      <p>Record what you took and what you ate for live absorption scoring</p>
+      <p>Track today's intake</p>
     </div>
 
     ${renderLogDueSection()}
@@ -2032,7 +2032,7 @@ function vLog() {
         <label>Supplement *</label>
         <div class="ta-wrap">
           <input id="supTypeahead" type="text" autocomplete="off"
-            placeholder="Type to search… (e.g. M for Magnesium)"
+            placeholder="Search supplements…"
             value="${lf.supplement}"
             oninput="taHandleInput(this.value)"
             onfocus="taHandleInput(this.value)"
@@ -2046,11 +2046,10 @@ function vLog() {
       <div id="dose-section">${renderDoseSection(sel, lf)}</div>
 
       <div class="form-group">
-        <label>Taken with — select all that apply for live absorption score</label>
+        <label>Eaten with</label>
         <div class="macro-grid" id="macro-btns">${renderMacroBtns(lf.macros||[])}</div>
-        <div style="font-size:11.5px;color:var(--text-muted);margin-top:7px;line-height:1.5">
-          💡 Fat, Carbs, Protein can be selected together &nbsp;·&nbsp;
-          <b>🚫 No Food</b> = empty stomach / just water, clears other selections
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px">
+          Multi-select · 🚫 No Food clears others
         </div>
       </div>
 
