@@ -6,6 +6,7 @@
   <title>SupplementTracker</title>
   <!-- External supplement database — edit data/supplements.js to add new supplements -->
   <script src="data/supplements.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
   <style>
     :root {
       --primary: #6366f1;
@@ -314,6 +315,46 @@
     .ta-item .ta-name { flex: 1; font-weight: 500; }
     .ta-item .ta-cat { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
     .ta-empty { padding: 10px 12px; color: var(--text-muted); font-size: 13px; font-style: italic; }
+
+    /* ── DSLD PRODUCT SEARCH ── */
+    .dsld-item {
+      padding: 9px 12px; cursor: pointer; font-size: 13.5px;
+      border-bottom: 1px solid var(--border); transition: background .1s;
+    }
+    .dsld-item:last-child { border-bottom: none; }
+    .dsld-item:hover { background: #eef5ff; }
+    .dsld-item-name { font-weight: 600; color: var(--text); }
+    .dsld-item-brand { font-size: 11.5px; color: var(--text-muted); margin-top: 1px; }
+    .dsld-spinner {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      font-size: 13px; color: var(--text-muted); pointer-events: none;
+    }
+    .dsld-match-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; background: #f8fafc;
+      border-radius: 10px; border: 1px solid var(--border);
+      cursor: pointer; transition: background .15s;
+    }
+    .dsld-match-item:hover { background: #eef5ff; border-color: var(--primary); }
+    .dsld-match-emoji { font-size: 22px; }
+    .dsld-match-info { flex: 1; }
+    .dsld-match-name { font-size: 13.5px; font-weight: 600; }
+    .dsld-match-dose { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+    .scan-btn {
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      width: 100%; padding: 10px; border-radius: 9px; font-size: 14px; font-weight: 600;
+      background: var(--primary); color: #fff; border: none; cursor: pointer;
+      transition: background .15s;
+    }
+    .scan-btn:hover { background: var(--primary-dark); }
+    .scan-btn:disabled { background: #a5b4fc; cursor: not-allowed; }
+    .dsld-divider {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 11.5px; color: var(--text-muted); margin: 10px 0;
+    }
+    .dsld-divider::before, .dsld-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
 
     /* ── SEARCH BAR ── */
     .search-wrap { position:relative; margin-bottom:20px; }
@@ -651,6 +692,22 @@
 <div id="toasts"></div>
 
 <!-- ═══════════════ REMINDER MODAL ═══════════════ -->
+<div id="dsldModal" class="rm-overlay" style="display:none" onclick="if(event.target===this)dsldCloseModal()">
+  <div class="rm-card" style="width:min(480px,92vw)">
+    <div class="rm-header">
+      <span class="rm-slot-emoji">🏷️</span>
+      <div>
+        <div id="dsldModalTitle" class="rm-title">Product matches</div>
+        <div id="dsldModalSub" class="rm-subtitle">Tap a supplement to pre-fill the form</div>
+      </div>
+    </div>
+    <div id="dsldModalList" class="rm-list" style="gap:7px;max-height:340px"></div>
+    <div class="rm-actions" style="margin-top:14px">
+      <button class="btn btn-outline" style="flex:1" onclick="dsldCloseModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div id="reminderModal" class="rm-overlay" style="display:none" onclick="rmOverlayClick(event)">
   <div class="rm-card">
     <div class="rm-header">
@@ -1945,6 +2002,24 @@ function vLog() {
         </div>
       </div>
 
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Auto-fill from product label <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+        <button class="scan-btn" id="scanBtn" onclick="barcodePickFile()">
+          📷 Scan Barcode
+        </button>
+        <input id="barcodeFileInput" type="file" accept="image/*" capture="environment"
+          style="display:none" onchange="barcodeHandleFile(this)">
+        <div class="dsld-divider">or search by name</div>
+        <div class="ta-wrap">
+          <input id="dsldInput" type="text" autocomplete="off"
+            placeholder="e.g. Life Extension Two-Per-Day, NOW Magnesium…"
+            oninput="dsldHandleInput(this.value)">
+          <span id="dsldSpinner" class="dsld-spinner" style="display:none">⏳</span>
+          <div id="dsldDropdown" class="ta-dropdown"></div>
+        </div>
+        <div id="dsldStatus" style="font-size:12px;margin-top:5px;display:none"></div>
+      </div>
+
       <div id="sup-info">${renderSupInfo(sel)}</div>
 
       <div id="dose-section">${renderDoseSection(sel, lf)}</div>
@@ -2513,6 +2588,234 @@ document.addEventListener('click', function(e) {
     document.querySelectorAll('.ta-dropdown.open').forEach(d => d.classList.remove('open'));
   }
 });
+
+// ════════════════════════════════════════════════════
+//  DSLD PRODUCT LABEL SEARCH
+// ════════════════════════════════════════════════════
+let _dsldTimer = null;
+
+function dsldHandleInput(val) {
+  clearTimeout(_dsldTimer);
+  const drop   = document.getElementById('dsldDropdown');
+  const status = document.getElementById('dsldStatus');
+  const spin   = document.getElementById('dsldSpinner');
+  if (!drop) return;
+
+  if (val.trim().length < 2) {
+    drop.classList.remove('open');
+    if (status) { status.style.display = 'none'; }
+    return;
+  }
+
+  _dsldTimer = setTimeout(() => dsldSearch(val.trim()), 400);
+}
+
+async function dsldSearch(q) {
+  const drop   = document.getElementById('dsldDropdown');
+  const status = document.getElementById('dsldStatus');
+  const spin   = document.getElementById('dsldSpinner');
+  if (!drop) return;
+
+  if (spin) spin.style.display = '';
+  drop.classList.remove('open');
+  if (status) status.style.display = 'none';
+
+  try {
+    const url = `https://api.ods.od.nih.gov/dsld/v9/search-filter?q=${encodeURIComponent(q)}&size=8`;
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error('API error');
+    const data = await res.json();
+    const hits = data.hits ?? [];
+
+    if (spin) spin.style.display = 'none';
+
+    if (hits.length === 0) {
+      if (status) { status.textContent = 'No products found — fill manually'; status.style.color = 'var(--text-muted)'; status.style.display = ''; }
+      return;
+    }
+
+    drop.innerHTML = hits.map(h => {
+      const s = h._source;
+      const id = h._id;
+      const name = s.fullName || '';
+      const brand = s.brandName || '';
+      return `<div class="dsld-item" onmousedown="dsldSelectResult('${id}','${name.replace(/'/g,"\\'")}','${brand.replace(/'/g,"\\'")}')">
+        <div class="dsld-item-name">${name}</div>
+        <div class="dsld-item-brand">${brand}</div>
+      </div>`;
+    }).join('');
+    drop.classList.add('open');
+
+  } catch(e) {
+    if (spin) spin.style.display = 'none';
+    if (status) { status.textContent = 'Label search unavailable — fill manually'; status.style.color = 'var(--text-muted)'; status.style.display = ''; }
+  }
+}
+
+async function dsldSelectResult(labelId, productName, brandName) {
+  const drop   = document.getElementById('dsldDropdown');
+  const input  = document.getElementById('dsldInput');
+  const status = document.getElementById('dsldStatus');
+  const spin   = document.getElementById('dsldSpinner');
+  if (drop)  drop.classList.remove('open');
+  if (input) input.value = productName + (brandName ? ' — ' + brandName : '');
+  if (spin)  spin.style.display = '';
+  if (status) status.style.display = 'none';
+
+  try {
+    const res  = await fetch(`https://api.ods.od.nih.gov/dsld/v9/label/${labelId}`);
+    if (!res.ok) throw new Error();
+    const label = await res.json();
+    if (spin) spin.style.display = 'none';
+
+    const rows   = label.ingredientRows || [];
+    const matches = dsldMatchIngredients(rows);
+
+    if (matches.length === 0) {
+      if (status) { status.textContent = 'No matching supplements found in this product'; status.style.color = 'var(--text-muted)'; status.style.display = ''; }
+      return;
+    }
+    if (matches.length === 1) {
+      dsldApplyMatch(matches[0]);
+    } else {
+      dsldShowMultiModal(matches, productName);
+    }
+  } catch(e) {
+    if (spin) spin.style.display = 'none';
+    if (status) { status.textContent = 'Could not load label — fill manually'; status.style.color = 'var(--text-muted)'; status.style.display = ''; }
+  }
+}
+
+function dsldMatchIngredients(rows) {
+  const seen = new Set();
+  const out  = [];
+  rows.forEach(row => {
+    const rowName = (row.name || '').toLowerCase();
+    const supp = DB.find(s => {
+      if (seen.has(s.name)) return false;
+      if (rowName.includes(s.name.toLowerCase())) return true;
+      return (s.aliases || []).some(a => rowName.includes(a.toLowerCase()));
+    });
+    if (supp) {
+      seen.add(supp.name);
+      const q = Array.isArray(row.quantity) ? row.quantity[0] : null;
+      out.push({ supp, amount: q?.quantity ?? null, unit: q?.unit || supp.doses?.[0]?.unit || 'mg' });
+    }
+  });
+  return out;
+}
+
+function dsldApplyMatch(match) {
+  const { supp, amount, unit } = match;
+  // Update state
+  S.logForm.supplement = supp.name;
+  S.logForm.dose       = amount != null ? String(amount) : '';
+  S.logForm.unit       = unit || 'mg';
+  S.logForm.macros     = [];
+  // Update UI without full re-render (preserve focus)
+  const taInput = document.getElementById('supTypeahead');
+  if (taInput) taInput.value = supp.name;
+  document.getElementById('supDropdown')?.classList.remove('open');
+  const supInfo   = document.getElementById('sup-info');
+  const doseEl    = document.getElementById('dose-section');
+  if (supInfo) supInfo.innerHTML  = renderSupInfo(supp);
+  if (doseEl)  doseEl.innerHTML   = renderDoseSection(supp, S.logForm);
+  document.getElementById('macro-btns')?.insertAdjacentHTML && (document.getElementById('macro-btns').innerHTML = renderMacroBtns([]));
+  document.getElementById('score-area') && (document.getElementById('score-area').innerHTML = '');
+  const status = document.getElementById('dsldStatus');
+  if (status) { status.textContent = `✅ Pre-filled: ${supp.name}${amount != null ? ' — ' + amount + ' ' + unit : ''}`; status.style.color = 'var(--success)'; status.style.display = ''; }
+}
+
+function dsldShowMultiModal(matches, productName) {
+  const modal     = document.getElementById('dsldModal');
+  const titleEl   = document.getElementById('dsldModalTitle');
+  const subEl     = document.getElementById('dsldModalSub');
+  const listEl    = document.getElementById('dsldModalList');
+  if (!modal) return;
+  if (titleEl) titleEl.textContent = productName;
+  if (subEl)   subEl.textContent   = `${matches.length} supplements found — tap one to log`;
+  if (listEl)  listEl.innerHTML = matches.map((m, i) => `
+    <div class="dsld-match-item" onmousedown="dsldModalPick(${i})">
+      <span class="dsld-match-emoji">${m.supp.emoji || '💊'}</span>
+      <div class="dsld-match-info">
+        <div class="dsld-match-name">${m.supp.name}</div>
+        <div class="dsld-match-dose">${m.amount != null ? m.amount + ' ' + m.unit : 'dose not listed'}</div>
+      </div>
+    </div>`).join('');
+  modal.style.display = '';
+  // stash matches for pick handler
+  modal._matches = matches;
+}
+
+function dsldModalPick(i) {
+  const modal = document.getElementById('dsldModal');
+  const matches = modal?._matches;
+  if (!matches || !matches[i]) return;
+  dsldCloseModal();
+  dsldApplyMatch(matches[i]);
+}
+
+function dsldCloseModal() {
+  const modal = document.getElementById('dsldModal');
+  if (modal) modal.style.display = 'none';
+}
+
+// ════════════════════════════════════════════════════
+//  BARCODE SCAN → OFF → DSLD
+// ════════════════════════════════════════════════════
+function barcodePickFile() {
+  document.getElementById('barcodeFileInput')?.click();
+}
+
+async function barcodeHandleFile(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  input.value = '';
+
+  const btn    = document.getElementById('scanBtn');
+  const status = document.getElementById('dsldStatus');
+  const dsldIn = document.getElementById('dsldInput');
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Reading barcode…'; }
+  if (status) status.style.display = 'none';
+
+  try {
+    const upc = await barcodeDecodeFile(file);
+    if (btn) btn.textContent = '⏳ Looking up product…';
+
+    const productName = await barcodeToProductName(upc);
+    if (!productName) throw new Error('not_found');
+
+    if (dsldIn) dsldIn.value = productName;
+    if (btn) { btn.disabled = false; btn.innerHTML = '📷 Scan Barcode'; }
+    await dsldSearch(productName);
+
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.innerHTML = '📷 Scan Barcode'; }
+    const msg = e.message === 'not_found'
+      ? '❌ Product not found — try searching by name'
+      : '❌ Couldn\'t read barcode — try searching by name';
+    if (status) { status.textContent = msg; status.style.color = 'var(--text-muted)'; status.style.display = ''; }
+  }
+}
+
+async function barcodeDecodeFile(file) {
+  const hints = new Map();
+  const reader = new ZXing.BrowserMultiFormatReader(hints);
+  const imgUrl = URL.createObjectURL(file);
+  try {
+    const result = await reader.decodeFromImageUrl(imgUrl);
+    return result.getText();
+  } finally {
+    URL.revokeObjectURL(imgUrl);
+  }
+}
+
+async function barcodeToProductName(upc) {
+  const res  = await fetch(`https://world.openfoodfacts.org/api/v2/product/${upc}.json?fields=product_name`);
+  const data = await res.json();
+  return data.status === 1 ? (data.product?.product_name || null) : null;
+}
 
 // ════════════════════════════════════════════════════
 //  SCHEDULE — constants & helpers
