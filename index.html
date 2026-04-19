@@ -2003,13 +2003,7 @@ function vLog() {
       </div>
 
       <div class="form-group" style="margin-bottom:12px">
-        <label>Auto-fill from product label <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
-        <button class="scan-btn" id="scanBtn" onclick="barcodePickFile()">
-          📷 Scan Barcode
-        </button>
-        <input id="barcodeFileInput" type="file" accept="image/*" capture="environment"
-          style="display:none" onchange="barcodeHandleFile(this)">
-        <div class="dsld-divider">or search by name</div>
+        <label>Search product label <span style="font-weight:400;color:var(--text-muted)">(optional — auto-fills supplement &amp; dose)</span></label>
         <div class="ta-wrap">
           <input id="dsldInput" type="text" autocomplete="off"
             placeholder="e.g. Life Extension Two-Per-Day, NOW Magnesium…"
