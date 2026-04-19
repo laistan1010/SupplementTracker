@@ -61,13 +61,13 @@
     .nav-item {
       display: flex; align-items: center; gap: 11px;
       padding: 10px 12px; border-radius: 10px;
-      color: var(--sidebar-text); cursor: pointer;
+      color: #6b7280; cursor: pointer;
       font-size: 13.5px; font-weight: 500;
       transition: all 0.15s; margin-bottom: 3px;
     }
     .nav-item:hover { background: var(--primary-light); color: var(--primary-dark); }
-    .nav-item.active { background: var(--primary-light); color: #154f2f; font-weight: 600; }
-    .nav-item .icon { font-size: 15px; width: 18px; text-align: center; }
+    .nav-item.active { background: var(--primary); color: #fff; font-weight: 600; }
+    .nav-item .icon { width: 20px; height: 20px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
     .sidebar-footer {
       padding: 14px 16px;
       border-top: 1px solid var(--border);
@@ -428,7 +428,7 @@
       padding:16px 18px; margin-bottom:24px;
       display:flex; align-items:center; gap:14px;
     }
-    .setup-cta .sc-icon { font-size:30px; }
+    .setup-cta .sc-icon { display:flex; align-items:center; justify-content:center; }
     .setup-cta .sc-text strong { font-size:14px; color:#154f2f; font-weight:700; }
     .setup-cta .sc-text p { font-size:12.5px; color:var(--primary-dark); margin-top:3px; }
 
@@ -680,12 +680,12 @@
     <p>Smart supplement management</p>
   </div>
   <nav class="sidebar-nav" id="nav">
-    <div class="nav-item active" data-view="dashboard" onclick="go('dashboard')"><span class="icon">🏠</span>Dashboard</div>
-    <div class="nav-item" data-view="search"    onclick="go('search')">   <span class="icon">🔍</span>Search Supplements</div>
-    <div class="nav-item" data-view="log"       onclick="go('log')">      <span class="icon">➕</span>Log Intake</div>
-    <div class="nav-item" data-view="schedule"  onclick="go('schedule')"> <span class="icon">📋</span>Schedule</div>
-    <div class="nav-item" data-view="history"   onclick="go('history')">  <span class="icon">📅</span>History</div>
-    <div class="nav-item" data-view="profile"   onclick="go('profile')">  <span class="icon">👤</span>My Profile</div>
+    <div class="nav-item active" data-view="dashboard" onclick="go('dashboard')"><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg></span>Dashboard</div>
+    <div class="nav-item" data-view="search"    onclick="go('search')">   <span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>Search Supplements</div>
+    <div class="nav-item" data-view="log"       onclick="go('log')">      <span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11v6"/><path d="M9 14h6"/></svg></span>Log Intake</div>
+    <div class="nav-item" data-view="schedule"  onclick="go('schedule')"> <span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h4"/></svg></span>Schedule</div>
+    <div class="nav-item" data-view="history"   onclick="go('history')">  <span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/></svg></span>History</div>
+    <div class="nav-item" data-view="profile"   onclick="go('profile')">  <span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg></span>My Profile</div>
   </nav>
 
   <div class="sidebar-footer">⚕️ For informational use only.<br>Not medical advice.</div>
@@ -1406,13 +1406,13 @@ function closeSidebar() {
 // ════════════════════════════════════════════════════
 function timingBadge(t) {
   const m = {
-    morning:{ cls:'badge-morning', icon:'🌅', lbl:'Morning' },
-    evening:{ cls:'badge-evening', icon:'🌙', lbl:'Evening' },
-    anytime:{ cls:'badge-anytime', icon:'⏰', lbl:'Anytime' },
-    meals:  { cls:'badge-meals',   icon:'🍽️', lbl:'With Meals' }
+    morning:{ cls:'badge-morning', lbl:'Morning' },
+    evening:{ cls:'badge-evening', lbl:'Evening' },
+    anytime:{ cls:'badge-anytime', lbl:'Anytime' },
+    meals:  { cls:'badge-meals',   lbl:'With Meals' }
   };
   const x = m[t]||m.anytime;
-  return `<span class="badge ${x.cls}">${x.icon} ${x.lbl}</span>`;
+  return `<span class="badge ${x.cls}">${x.lbl}</span>`;
 }
 
 function macroBadgeCls(macro) {
@@ -1423,8 +1423,7 @@ function macroBadgeCls(macro) {
 
 function scorePill(label, score) {
   const cls = score>=75?'sp-excellent':score>=50?'sp-good':'sp-poor';
-  const icon = score>=75?'✅':score>=50?'⚡':'⚠️';
-  return `<span class="score-pill ${cls}">${icon} ${label}</span>`;
+  return `<span class="score-pill ${cls}">${label}</span>`;
 }
 
 function scoreBar(score, label) {
@@ -1517,13 +1516,13 @@ function vDashboard() {
 
   return `
     <div class="page-header">
-      <h2>${S.profile.name?`👋 Hello, ${S.profile.name}`:'👋 Welcome to SupplementTracker'}</h2>
+      <h2>${S.profile.name?`Hello, ${S.profile.name}`:'Welcome to SupplementTracker'}</h2>
       <p>${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p>
     </div>
 
     ${noProfile?`
       <div class="setup-cta">
-        <div class="sc-icon">👤</div>
+        <div class="sc-icon"><svg width="44" height="44" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="18" cy="18" r="18" fill="#588768"/><g transform="translate(8.5,7) scale(0.8)" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></g></svg></div>
         <div class="sc-text" style="flex:1">
           <strong>Set up your profile</strong>
           <p>Add health conditions & medications for personalised conflict warnings</p>
@@ -1544,7 +1543,7 @@ function vDashboard() {
       </div>
       <div class="stat-card">
         <div class="s-label">Current Streak</div>
-        <div class="s-value" style="color:var(--warning)">🔥 ${streak}</div>
+        <div class="s-value" style="color:var(--warning)">${streak}</div>
         <div class="s-sub">days in a row</div>
       </div>
     </div>
@@ -1553,18 +1552,18 @@ function vDashboard() {
 
     ${medConflicts.length?`
       <div class="med-conflict-banner">
-        <h4>🚫 ${medConflicts.length} Drug–Supplement Interaction${medConflicts.length>1?'s':''} Detected</h4>
+        <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg> ${medConflicts.length} Drug–Supplement Interaction${medConflicts.length>1?'s':''} Detected</h4>
         <ul>${medConflicts.map(c=>`
-          <li><span>${c.sev==='high'?'🚫':'⚠️'}</span>
+          <li><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${c.sev==='high'?'<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>':'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>'}</svg></span>
             <div><strong>${c.supplement} × ${c.medication}:</strong> ${c.note}</div>
           </li>`).join('')}
         </ul>
-        <div class="med-disclaimer">⚕️ Consult your doctor or pharmacist before combining these</div>
+        <div class="med-disclaimer">Consult your doctor or pharmacist before combining these</div>
       </div>`:''}
 
     ${conflicts.length?`
       <div class="conflict-banner">
-        <h4>⚠️ ${conflicts.length} Interaction${conflicts.length>1?'s':''} Detected Today</h4>
+        <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> ${conflicts.length} Interaction${conflicts.length>1?'s':''} Detected Today</h4>
         <ul>${conflicts.map(c=>`
           <li><span>→</span>
             <span><strong>${c.a} × ${c.b}:</strong> ${c.note}</span>
@@ -1579,7 +1578,7 @@ function vDashboard() {
 
     ${logged.length===0?`
       <div class="empty" style="background:#fff;border-radius:12px;border:1px solid var(--border)">
-        <div class="ei">💊</div>
+        <div class="ei"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><circle cx="7.5" cy="12" r="1" fill="var(--primary)" stroke="none"/><circle cx="7.5" cy="16" r="1" fill="var(--primary)" stroke="none"/><path d="M10 12h7"/><path d="M10 16h5"/></svg></div>
         <h3>No supplements logged today</h3>
         <p>Click "+ Log Supplement" to start tracking</p>
       </div>`
@@ -1589,13 +1588,13 @@ function vDashboard() {
       const hasConflict=conflicts.some(c=>c.a===log.name||c.b===log.name);
       return `
         <div class="log-item">
-          <div class="log-emoji" style="background:${sup.color}22">${sup.emoji}</div>
+          <div class="log-emoji" style="background:${sup.color}22;color:${sup.color};font-size:14px;font-weight:800">${sup.name[0].toUpperCase()}</div>
           <div class="li">
-            <div class="ln">${log.name}${hasConflict?' ⚠️':''}</div>
+            <div class="ln">${log.name}${hasConflict?` <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`:''}</div>
             <div class="lm">
               ${log.dose?`<span>${log.dose} ${log.unit}</span>`:''}
               ${timingBadge(sup.timing)}
-              <span class="badge ${macroBadgeCls(sup.absorption.macro)}">${sup.absorption.macroLabel}</span>
+              <span class="badge ${macroBadgeCls(sup.absorption.macro)}">${sup.absorption.macroLabel.split(' ').slice(1).join(' ')}</span>
               ${log.macro?`<span style="color:var(--text-muted);font-size:11px">ate: ${log.macro}</span>`:''}
               ${log.absorptionScore?`${scorePill(log.absorptionScore>=75?'Excellent':log.absorptionScore>=50?'Good':'Poor',log.absorptionScore)}`:''}
               <span style="color:var(--text-muted);font-size:11px">${log.time}</span>
@@ -1607,14 +1606,14 @@ function vDashboard() {
 
     ${logged.length?`
       <div style="margin-top:22px">
-        <h3 style="font-size:14.5px;font-weight:700;margin-bottom:10px">💡 Today's Absorption Tips</h3>
+        <h3 style="font-size:14.5px;font-weight:700;margin-bottom:10px">Today's Absorption Tips</h3>
         ${logged.map(log=>{
           const sup=DB.find(s=>s.name===log.name);
           if(!sup) return '';
           return `
             <div style="font-size:13px;padding:9px 12px;background:#fff;border-radius:8px;border:1px solid var(--border);margin-bottom:6px">
-              ${sup.emoji} <strong>${sup.name}</strong> — ${sup.absorption.tip}
-              ${sup.pairsWith?`<span style="color:var(--success);margin-left:6px">🤝 Pairs with <strong>${sup.pairsWith}</strong></span>`:''}
+              <strong>${sup.name}</strong> — ${sup.absorption.tip}
+              ${sup.pairsWith?`<span style="color:var(--success);margin-left:6px">· Pairs with <strong>${sup.pairsWith}</strong></span>`:''}
             </div>`;
         }).join('')}
       </div>`:''}`;
@@ -2835,9 +2834,9 @@ async function barcodeDecodeFile(file) {
 //  SCHEDULE — constants & helpers
 // ════════════════════════════════════════════════════
 const SLOTS = {
-  morning:   { label:'Morning',   emoji:'🌅', color:'#f59e0b', hours:[6,11]  },
-  afternoon: { label:'Afternoon', emoji:'☀️', color:'#10b981', hours:[12,17] },
-  evening:   { label:'Evening',   emoji:'🌙', color:'#6366f1', hours:[18,23] }
+  morning:   { label:'Morning',   color:'#f59e0b', hours:[6,11]  },
+  afternoon: { label:'Afternoon', color:'#10b981', hours:[12,17] },
+  evening:   { label:'Evening',   color:'#6366f1', hours:[18,23] }
 };
 const DAYS       = ['mon','tue','wed','thu','fri','sat','sun'];
 const DAY_LABELS = ['M','T','W','T','F','S','S'];
@@ -3115,16 +3114,16 @@ function renderTodayPlan() {
   const slotsHTML = Object.entries(SLOTS).map(([slot, info]) => {
     if (!bySlot[slot].length) return '';
     return `
-      <div class="plan-slot-label" style="color:${info.color}">${info.emoji} ${info.label.toUpperCase()}</div>
+      <div class="plan-slot-label" style="color:${info.color}">${info.label.toUpperCase()}</div>
       <div class="plan-chips">
         ${bySlot[slot].map(name => {
           const sup = DB.find(s => s.name === name);
           const isDone = logged.has(name);
           const safe   = name.replace(/'/g,"\\'");
           return `<div class="plan-chip${isDone?' done':''}">
-            ${sup ? sup.emoji : '💊'} ${name}
+            ${name}
             ${isDone
-              ? '<span style="margin-left:3px">✅</span>'
+              ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left:3px;vertical-align:middle"><polyline points="20 6 9 17 4 12"/></svg>`
               : `<button class="plan-chip-log" onclick="quickLog('${safe}')" title="Quick log">+ Log</button>`}
           </div>`;
         }).join('')}
@@ -3134,14 +3133,14 @@ function renderTodayPlan() {
   return `
     <div class="plan-card">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 style="font-size:14.5px;font-weight:700">📋 Today's Plan</h3>
+        <h3 style="font-size:14.5px;font-weight:700">Today's Plan</h3>
         <span style="font-size:12px;color:var(--text-muted)">${done}/${total} done</span>
       </div>
       <div class="plan-progress"><div class="plan-progress-fill" style="width:${pct}%"></div></div>
       ${slotsHTML}
       ${done < total
-        ? `<button class="btn btn-outline btn-sm" onclick="showCurrentSlotReminder()">🔔 See What's Due Now</button>`
-        : `<div style="color:var(--success);font-size:13px;font-weight:600">🎉 All supplements done for today!</div>`}
+        ? `<button class="btn btn-outline btn-sm" onclick="showCurrentSlotReminder()">See What's Due Now</button>`
+        : `<div style="color:var(--success);font-size:13px;font-weight:600">All supplements done for today!</div>`}
     </div>`;
 }
 
