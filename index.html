@@ -688,7 +688,7 @@
     <div class="nav-item" data-view="profile"   onclick="go('profile')">  <span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg></span>My Profile</div>
   </nav>
 
-  <div class="sidebar-footer">⚕️ For informational use only.<br>Not medical advice.</div>
+  <div class="sidebar-footer">For informational use only.<br>Not medical advice.</div>
 </aside>
 
 <!-- ═══════════════ MAIN ═══════════════ -->
@@ -701,7 +701,7 @@
 <div id="dsldModal" class="rm-overlay" style="display:none" onclick="if(event.target===this)dsldCloseModal()">
   <div class="rm-card" style="width:min(480px,92vw)">
     <div class="rm-header">
-      <span class="rm-slot-emoji">🏷️</span>
+      <span class="rm-slot-emoji"></span>
       <div>
         <div id="dsldModalTitle" class="rm-title">Product matches</div>
         <div id="dsldModalSub" class="rm-subtitle">Tap a supplement to pre-fill the form</div>
@@ -725,7 +725,7 @@
     </div>
     <div id="rm-list" class="rm-list"></div>
     <div class="rm-actions">
-      <button class="btn btn-primary" style="flex:1" onclick="logAllFromModal()">✅ Log All & Close</button>
+      <button class="btn btn-primary" style="flex:1" onclick="logAllFromModal()">Log All & Close</button>
       <button class="btn btn-outline" style="flex:1" onclick="closeReminderModal()">Dismiss</button>
     </div>
   </div>
@@ -1638,7 +1638,7 @@ function renderSearchResults(q) {
       <div class="sup-card">
         <div class="sh">
           <div>
-            <div class="sn">${sup.emoji} ${sup.name}</div>
+            <div class="sn">${sup.name}</div>
             <div class="sc">${sup.category}</div>
           </div>
           <button class="btn btn-outline btn-sm" onclick="quickLog('${sup.name}')">+ Log</button>
@@ -1927,7 +1927,7 @@ function renderLogDueSection() {
       <div style="margin-bottom:12px">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
                     color:${isCurrent ? info.color : 'var(--text-muted)'};margin-bottom:7px;display:flex;align-items:center;gap:6px">
-          ${info.emoji} ${info.label}
+          ${info.label}
           ${isCurrent ? `<span style="font-size:10px;background:${info.color}22;color:${info.color};
             padding:2px 7px;border-radius:10px;font-weight:600;text-transform:none;letter-spacing:0">Active now</span>` : ''}
         </div>
@@ -1939,11 +1939,11 @@ function renderLogDueSection() {
             const safe  = name.replace(/'/g,"\\'");
             if (isDone) return `
               <div class="log-due-chip done" id="${uid}">
-                ${sup ? sup.emoji : '💊'} ${name} ✅
+                ${name} <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="20 6 9 17 4 12"/></svg>
               </div>`;
             return `
               <div class="log-due-chip" id="${uid}" onclick="pickSchedSup('${safe}')">
-                ${sup ? sup.emoji : '💊'} ${name}
+                ${name}
               </div>`;
           }).join('')}
         </div>
@@ -2095,7 +2095,7 @@ function renderHistoryList(grouped, dates, today) {
           <div class="hist-item">
             <div class="hist-dot" style="background:${sup?sup.color:'var(--primary)'}"></div>
             <div class="hd" style="flex:1">
-              <div class="hn">${sup?sup.emoji:'💊'} ${log.name}${log.dose?` — ${log.dose}${log.unit||''}`:''}</div>
+              <div class="hn">${log.name}${log.dose?` — ${log.dose}${log.unit||''}`:''}</div>
               <div class="hm">
                 ${log.time?log.time+' · ':''}
                 ${log.macro?'Eaten with: '+log.macro+' · ':''}
@@ -2159,7 +2159,7 @@ function renderCalendar(grouped, today) {
           <div class="hist-item">
             <div class="hist-dot" style="background:${sup?sup.color:'var(--primary)'}"></div>
             <div class="hd" style="flex:1">
-              <div class="hn">${sup?sup.emoji:'💊'} ${log.name}${log.dose?` — ${log.dose}${log.unit||''}`:''}</div>
+              <div class="hn">${log.name}${log.dose?` — ${log.dose}${log.unit||''}`:''}</div>
               <div class="hm">
                 ${log.time?log.time+' · ':''}
                 ${log.macro?'Eaten with: '+log.macro+' · ':''}
@@ -2524,7 +2524,6 @@ function taHandleInput(val) {
     drop.innerHTML = matches.map(s =>
       `<div class="ta-item" data-name="${s.name.replace(/"/g,'&quot;')}"
         onmousedown="taSelectItem(this.dataset.name)">
-        <span>${s.emoji || '💊'}</span>
         <span class="ta-name">${s.name}</span>
         <span class="ta-cat">${s.category || ''}</span>
       </div>`
@@ -2723,7 +2722,6 @@ function dsldShowMultiModal(matches, productName) {
   if (subEl)   subEl.textContent   = `${matches.length} supplements found — tap one to log`;
   if (listEl)  listEl.innerHTML = matches.map((m, i) => `
     <div class="dsld-match-item" onmousedown="dsldModalPick(${i})">
-      <span class="dsld-match-emoji">${m.supp.emoji || '💊'}</span>
       <div class="dsld-match-info">
         <div class="dsld-match-name">${m.supp.name}</div>
         <div class="dsld-match-dose">${m.amount != null ? m.amount + ' ' + m.unit : 'dose not listed'}</div>
@@ -2955,7 +2953,6 @@ function vSchedule() {
     return `
       <div class="sched-row">
         <div class="sched-info">
-          <span class="sched-emoji">${sup ? sup.emoji : '💊'}</span>
           <span class="sched-name">${name}</span>
         </div>
         <div class="sched-days">
@@ -2966,7 +2963,7 @@ function vSchedule() {
         <div class="sched-slots">
           ${Object.entries(SLOTS).map(([s,info]) => `
             <button class="slot-pill${cfg.slot===s?' active':''}" data-slot="${s}"
-              onclick="setSchedSlot('${safe}','${s}')">${info.emoji} ${info.label}</button>`).join('')}
+              onclick="setSchedSlot('${safe}','${s}')">${info.label}</button>`).join('')}
         </div>
         <button class="del-btn" onclick="removeFromSched('${safe}')" title="Remove">×</button>
       </div>`;
@@ -2995,7 +2992,7 @@ function vSchedule() {
     ${Object.entries(SLOTS).map(([slot, info]) => `
       <div class="sched-slot-block">
         <div class="sched-slot-header" style="color:${info.color}">
-          ${info.emoji} ${info.label}
+          ${info.label}
           <span class="sched-count">${bySlot[slot].length} supplement${bySlot[slot].length!==1?'s':''}</span>
         </div>
         ${bySlot[slot].length
@@ -3031,7 +3028,6 @@ function schedTaInput(val) {
     : matches.map(s =>
         `<div class="ta-item" data-name="${s.name.replace(/"/g,'&quot;')}"
           onmousedown="schedTaSelect(this.dataset.name)">
-          <span>${s.emoji||'💊'}</span>
           <span class="ta-name">${s.name}</span>
           <span class="ta-cat">${s.category||''}</span>
         </div>`).join('');
@@ -3170,7 +3166,7 @@ function checkReminderModal() {
 
 function showReminderModal(slot, due) {
   const info = SLOTS[slot];
-  document.getElementById('rm-emoji').textContent   = info.emoji;
+  document.getElementById('rm-emoji').textContent   = '';
   document.getElementById('rm-title').textContent   = `${info.label} Supplements`;
   document.getElementById('rm-subtitle').textContent = `${due.length} supplement${due.length!==1?'s':''} due — tap Log or log all at once`;
 
@@ -3180,7 +3176,6 @@ function showReminderModal(slot, due) {
     const uid  = name.replace(/[^a-z0-9]/gi,'_');
     return `
       <div class="rm-item" id="rmi_${uid}">
-        <span class="rm-item-emoji">${sup ? sup.emoji : '💊'}</span>
         <div class="rm-item-info">
           <div class="rm-item-name">${name}</div>
           <div class="rm-item-cat">${sup ? sup.category : ''}</div>
@@ -3261,7 +3256,7 @@ function checkBrowserNotif() {
 
   const info = SLOTS[slot];
   const preview = due.slice(0,3).join(', ') + (due.length > 3 ? ` +${due.length-3} more` : '');
-  const n = new Notification(`${info.emoji} ${info.label} Supplements Due`, {
+  const n = new Notification(`${info.label} Supplements Due`, {
     body: `${due.length} to take: ${preview}`,
     tag:  `supp_${slot}`,
     requireInteraction: false
