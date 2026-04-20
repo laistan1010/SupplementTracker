@@ -1766,7 +1766,7 @@ function renderSearchResults(q) {
   const lq = (q||'').toLowerCase();
   const userTerms = [...(S.profile.conditions||[]),...(S.profile.medications||[])].map(x=>x.toLowerCase());
   const list = lq
-    ? DB.filter(s=>s.name.toLowerCase().includes(lq)||s.category.toLowerCase().includes(lq)||(s.aliases||[]).some(a=>a.toLowerCase().includes(lq)))
+    ? DB.filter(s=>s.name.toLowerCase().startsWith(lq)||(s.category||'').toLowerCase().startsWith(lq)||(s.aliases||[]).some(a=>a.toLowerCase().includes(lq)))
     : DB;
 
   if (list.length===0) return `<div class="empty"><div class="ei"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div><h3>No results</h3><p>Try a different term</p></div>`;
@@ -2655,7 +2655,7 @@ function taHandleInput(val) {
     ? DB.filter(s => {
         const n = s.name.toLowerCase();
         const a = (s.aliases || []).map(x => x.toLowerCase());
-        return n.includes(q) || a.some(x => x.includes(q));
+        return n.startsWith(q) || a.some(x => x.includes(q));
       })
     : DB; // empty query → show all
 
