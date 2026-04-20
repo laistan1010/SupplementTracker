@@ -104,6 +104,36 @@
     .stat-card .s-value { font-size: 30px; font-weight: 800; margin-top: 3px; color: var(--text); }
     .stat-card .s-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
 
+    /* ── DASH HERO ── */
+    .dash-hero {
+      position: relative; border-radius: 16px; overflow: hidden;
+      height: 185px; margin-bottom: 22px;
+      background: linear-gradient(135deg, #3d6b50, #588768);
+      background-image: url('images/hero-bg.jpg');
+      background-size: cover; background-position: center top;
+    }
+    .dash-hero-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to right, rgba(0,0,0,0.58) 0%, rgba(0,0,0,0.18) 100%);
+      padding: 20px 22px; display: flex; flex-direction: column; justify-content: flex-end;
+    }
+    .dash-hero-date { font-size: 10.5px; color: rgba(255,255,255,0.72); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 5px; }
+    .dash-hero-name { font-size: 22px; font-weight: 800; color: #fff; line-height: 1.2; }
+    .dash-hero-sub  { font-size: 13px; color: rgba(255,255,255,0.80); margin-top: 4px; }
+
+    /* ── QUICK ACTIONS ── */
+    .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 22px; }
+    .qa-card {
+      background: var(--card); border-radius: var(--card-radius);
+      padding: 15px 16px; border: 1px solid var(--border);
+      box-shadow: var(--card-shadow); cursor: pointer;
+      transition: transform .12s, box-shadow .12s;
+    }
+    .qa-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+    .qa-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 9px; }
+    .qa-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .qa-desc  { font-size: 11px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+
     /* ── STACKS ── */
     .stacks-grid {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(210px,1fr));
@@ -114,21 +144,13 @@
       padding: 16px; border: 1px solid var(--border);
       box-shadow: var(--card-shadow);
     }
-    .stack-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:11px; gap:8px; }
-    .stack-name  { font-size:14px; font-weight:700; color:var(--text); }
+    .stack-name    { font-size:14px; font-weight:700; color:var(--text); }
     .stack-tagline { font-size:11.5px; color:var(--text-muted); margin-top:2px; line-height:1.4; }
-    .stack-chips { display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; }
-    .stack-chip {
-      font-size:10.5px; padding:2px 8px; border-radius:9999px;
-      background:#f3f4f6; color:#6b7280; border:1px solid #e5e7eb;
-      display:inline-flex; align-items:center; gap:3px; white-space:nowrap;
-    }
-    .stack-chip-done { font-weight:600; }
-    .btn-stack-log {
-      font-size:11.5px; padding:4px 12px; border-radius:9999px; font-weight:600;
-      border:1.5px solid; cursor:pointer; white-space:nowrap; transition:opacity .15s;
-    }
-    .btn-stack-log:disabled { opacity:.5; cursor:default; }
+    .stack-items   { display:flex; flex-direction:column; gap:9px; margin-top:12px; }
+    .stack-item    { display:flex; flex-direction:column; gap:1px; }
+    .stack-item-name { font-size:12.5px; font-weight:700; }
+    .stack-item-mech { font-size:11.5px; color:var(--text-muted); line-height:1.4; }
+    .stack-source  { font-size:10.5px; color:#b0a89e; margin-top:10px; padding-top:8px; border-top:1px solid var(--border); }
 
     /* ── BADGES ── */
     .badge {
@@ -1584,9 +1606,12 @@ function vDashboard() {
   const noProfile = !S.profile.name;
 
   return `
-    <div class="page-header">
-      <h2>${S.profile.name?`Hello, ${S.profile.name}`:'Welcome to SupplementTracker'}</h2>
-      <p>${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p>
+    <div class="dash-hero">
+      <div class="dash-hero-overlay">
+        <div class="dash-hero-date">${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
+        <div class="dash-hero-name">${S.profile.name?`Good day, ${S.profile.name}`:'Welcome to SupplementTracker'}</div>
+        <div class="dash-hero-sub">${logged.length?`You've logged ${logged.length} supplement${logged.length>1?'s':''} today.`:'You\'ve logged 0 supplements today.'}</div>
+      </div>
     </div>
 
     ${noProfile?`
@@ -1617,7 +1642,22 @@ function vDashboard() {
       </div>
     </div>
 
-    ${renderStacks()}
+    <div class="quick-actions">
+      <div class="qa-card" onclick="go('search')">
+        <div class="qa-icon" style="background:var(--primary-light)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </div>
+        <div class="qa-title">Search Supplements</div>
+        <div class="qa-desc">Find info & safety data</div>
+      </div>
+      <div class="qa-card" onclick="go('history')">
+        <div class="qa-icon" style="background:var(--primary-light)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/></svg>
+        </div>
+        <div class="qa-title">View History</div>
+        <div class="qa-desc">Calendar & past logs</div>
+      </div>
+    </div>
 
     ${renderTodayPlan()}
 
@@ -1687,68 +1727,31 @@ function vDashboard() {
               ${sup.pairsWith?`<span style="color:var(--success);margin-left:6px">· Pairs with <strong>${sup.pairsWith}</strong></span>`:''}
             </div>`;
         }).join('')}
-      </div>`:''}`;
+      </div>`:''}
+
+    ${renderStacks()}`;
 }
 
 function renderStacks() {
   return `
     <div style="margin-bottom:26px">
-      <h3 style="font-size:15.5px;font-weight:700;margin-bottom:13px">Supplement Stacks</h3>
+      <h3 style="font-size:15.5px;font-weight:700;margin-bottom:13px">Recommended Stacks</h3>
       <div class="stacks-grid">
-        ${STACKS.map((st, i) => {
-          const logged = st.supplements.filter(n => S.loggedToday.some(l => l.name === n));
-          const allDone = logged.length === st.supplements.length;
-          return `
-            <div class="stack-card" style="border-top:3px solid ${st.color}">
-              <div class="stack-header">
-                <div>
-                  <div class="stack-name">${st.name}</div>
-                  <div class="stack-tagline">${st.tagline}</div>
-                </div>
-                <button class="btn-stack-log"
-                  style="background:${allDone?'transparent':st.color+'18'};color:${allDone?'#9ca3af':st.color};border-color:${allDone?'#d1d5db':st.color};"
-                  onclick="logStack(${i})" ${allDone?'disabled':''}>
-                  ${allDone ? 'Done' : 'Log All'}
-                </button>
-              </div>
-              <div class="stack-chips">
-                ${st.supplements.map(n => {
-                  const done = S.loggedToday.some(l => l.name === n);
-                  const sup  = DB.find(s => s.name === n);
-                  const c    = sup ? sup.color : '#6b7280';
-                  return `<span class="stack-chip${done?' stack-chip-done':''}"
-                    style="${done?`background:${c}1a;color:${c};border-color:${c}44;`:''}">
-                    ${done?`<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`:''}${n}
-                  </span>`;
-                }).join('')}
-              </div>
-            </div>`;
-        }).join('')}
+        ${STACKS.map(st => `
+          <div class="stack-card" style="border-top:3px solid ${st.color}">
+            <div class="stack-name">${st.name}</div>
+            <div class="stack-tagline">${st.tagline}</div>
+            <div class="stack-items">
+              ${st.supplements.map(s => `
+                <div class="stack-item">
+                  <span class="stack-item-name" style="color:${st.color}">${s.name}</span>
+                  <span class="stack-item-mech">${s.mechanism}</span>
+                </div>`).join('')}
+            </div>
+            <div class="stack-source">Evidence-based · <a href="https://examine.com" target="_blank" style="color:${st.color};text-decoration:none;font-weight:600">Examine.com</a></div>
+          </div>`).join('')}
       </div>
     </div>`;
-}
-
-function logStack(idx) {
-  const st = S.loggedToday, stack = STACKS[idx];
-  const timeStr = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-  let added = 0;
-  stack.supplements.forEach(name => {
-    if (st.some(l => l.name === name)) return;
-    const sup = DB.find(s => s.name === name);
-    if (!sup) return;
-    const dose = (sup.doses && sup.doses[1]) || (sup.doses && sup.doses[0]) || null;
-    S.loggedToday.push({
-      id: Date.now().toString() + Math.random().toString(36).slice(2),
-      name,
-      dose: dose ? dose.amount : '',
-      unit: dose ? dose.unit : 'mg',
-      macros: [], macro: '', notes: '', absorptionScore: 0,
-      date: todayStr(), time: timeStr
-    });
-    added++;
-  });
-  if (added) { save(); toast(`${stack.name} stack — ${added} supplement${added>1?'s':''} logged`); render(); }
-  else toast('All supplements in this stack are already logged today');
 }
 
 /* ── SEARCH ── */
@@ -2971,27 +2974,45 @@ const SLOTS = {
 const STACKS = [
   {
     name: 'Gym',
-    tagline: 'Strength, endurance & recovery',
+    tagline: 'Strength & endurance',
     color: '#f59e0b',
-    supplements: ['Creatine','Whey Protein','Vitamin D3','Magnesium','Omega-3 (Fish Oil)','Zinc','L-Citrulline','Beta-Alanine']
+    supplements: [
+      { name:'Creatine',        mechanism:'Replenishes ATP for short bursts of power; most studied ergogenic aid' },
+      { name:'Whey Protein',    mechanism:'Fast-absorbing complete protein; directly drives muscle protein synthesis' },
+      { name:'Beta-Alanine',    mechanism:'Buffers lactic acid build-up; delays fatigue in high-intensity sets' },
+      { name:'L-Citrulline',    mechanism:'Raises nitric oxide levels; improves blood flow and power output' }
+    ]
   },
   {
     name: 'Sleep',
     tagline: 'Wind down & restore',
     color: '#6366f1',
-    supplements: ['Melatonin','Magnesium','Ashwagandha','L-Theanine','Glycine']
+    supplements: [
+      { name:'Melatonin',   mechanism:'Signals circadian rhythm; reduces time to fall asleep (strong RCT evidence)' },
+      { name:'Magnesium',   mechanism:'Activates GABA receptors; deficiency is common and directly disrupts sleep' },
+      { name:'Glycine',     mechanism:'Lowers core body temperature; improves slow-wave deep sleep quality' },
+      { name:'L-Theanine',  mechanism:'Promotes alpha brain waves; calming without sedation' }
+    ]
   },
   {
     name: 'Focus',
-    tagline: 'Mental clarity & drive',
+    tagline: 'Alertness & clarity',
     color: '#0ea5e9',
-    supplements: ['Alpha-GPC','L-Theanine','Lion\'s Mane Mushroom','Rhodiola Rosea','Panax Ginseng']
+    supplements: [
+      { name:'Pre-Workout (Caffeine)', mechanism:'Blocks adenosine receptors; strongest evidence for acute alertness & reaction time' },
+      { name:'L-Theanine',            mechanism:'Smooths caffeine jitters; improves sustained attention when combined' },
+      { name:'Alpha-GPC',             mechanism:'Raises brain acetylcholine; supports working memory and attention' }
+    ]
   },
   {
     name: 'Study',
-    tagline: 'Memory, retention & calm',
+    tagline: 'Memory & retention',
     color: '#10b981',
-    supplements: ['Bacopa Monnieri','Phosphatidylserine','Lion\'s Mane Mushroom','Ginkgo Biloba','L-Theanine']
+    supplements: [
+      { name:'Bacopa Monnieri',    mechanism:'Multiple RCTs show improved memory recall; full effect takes 6–12 weeks' },
+      { name:"Lion's Mane Mushroom", mechanism:'Stimulates nerve growth factor (NGF); supports neuroplasticity long-term' },
+      { name:'Alpha-GPC',          mechanism:'Acetylcholine precursor; aids learning and memory consolidation' }
+    ]
   }
 ];
 
