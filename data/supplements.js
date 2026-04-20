@@ -1606,7 +1606,7 @@ var SUPP_DB = [
 
   {
     "name": "5-HTP",
-    "aliases": ["5-Hydroxytryptophan", "Oxitriptan", "Griffonia Seed Extract"],
+    "aliases": ["5-Hydroxytryptophan", "Oxitriptan", "Griffonia Seed Extract", "5HTP"],
     "category": "Mood / Sleep",
     "emoji": "🌙",
     "color": "#7e22ce",
@@ -1859,28 +1859,6 @@ var SUPP_DB = [
   },
 
   // ── NOOTROPICS / BRAIN ────────────────────────────
-
-  {
-    "name": "5-HTP",
-    "aliases": ["5-Hydroxytryptophan", "Griffonia Seed Extract", "5HTP"],
-    "category": "Nootropic",
-    "emoji": "🧠",
-    "color": "#8b5cf6",
-    "timing": "evening",
-    "timingNote": "Best taken 30–60 min before bed — converts to serotonin then melatonin",
-    "absorption": { "macro": "any", "macroLabel": "🍽️ Any Meal", "score": 80, "scoreLabel": "Good", "tip": "Crosses the blood-brain barrier easily. Taking with carbohydrates (low protein) may enhance brain uptake. Do not combine with antidepressants." },
-    "conflicts": [
-      { "name": "SSRIs", "sev": "high", "note": "⚠️ MEDICATION: Risk of serotonin syndrome — dangerous excess of serotonin. Absolute contraindication with SSRIs, SNRIs, MAOIs." },
-      { "name": "MAOIs", "sev": "high", "note": "⚠️ MEDICATION: Extremely dangerous combination — risk of serotonin syndrome. Never combine." },
-      { "name": "Melatonin", "sev": "low", "note": "5-HTP converts to serotonin → melatonin. Combining with melatonin may cause excessive sedation." }
-    ],
-    "healthWarnings": ["on any antidepressant medication", "SSRIs", "SNRIs", "MAOIs"],
-    "doses": [
-      {"amount": 50, "unit": "mg", "label": "Low"},
-      {"amount": 100, "unit": "mg", "label": "Standard"},
-      {"amount": 200, "unit": "mg", "label": "High"}
-    ]
-  },
 
   {
     "name": "Rhodiola Rosea",
