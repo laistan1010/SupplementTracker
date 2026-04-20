@@ -104,6 +104,32 @@
     .stat-card .s-value { font-size: 30px; font-weight: 800; margin-top: 3px; color: var(--text); }
     .stat-card .s-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
 
+    /* ── STACKS ── */
+    .stacks-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(210px,1fr));
+      gap: 14px;
+    }
+    .stack-card {
+      background: var(--card); border-radius: var(--card-radius);
+      padding: 16px; border: 1px solid var(--border);
+      box-shadow: var(--card-shadow);
+    }
+    .stack-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:11px; gap:8px; }
+    .stack-name  { font-size:14px; font-weight:700; color:var(--text); }
+    .stack-tagline { font-size:11.5px; color:var(--text-muted); margin-top:2px; line-height:1.4; }
+    .stack-chips { display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; }
+    .stack-chip {
+      font-size:10.5px; padding:2px 8px; border-radius:9999px;
+      background:#f3f4f6; color:#6b7280; border:1px solid #e5e7eb;
+      display:inline-flex; align-items:center; gap:3px; white-space:nowrap;
+    }
+    .stack-chip-done { font-weight:600; }
+    .btn-stack-log {
+      font-size:11.5px; padding:4px 12px; border-radius:9999px; font-weight:600;
+      border:1.5px solid; cursor:pointer; white-space:nowrap; transition:opacity .15s;
+    }
+    .btn-stack-log:disabled { opacity:.5; cursor:default; }
+
     /* ── BADGES ── */
     .badge {
       display: inline-flex; align-items: center; gap: 3px;
@@ -1591,6 +1617,8 @@ function vDashboard() {
       </div>
     </div>
 
+    ${renderStacks()}
+
     ${renderTodayPlan()}
 
     ${medConflicts.length?`
@@ -1660,6 +1688,67 @@ function vDashboard() {
             </div>`;
         }).join('')}
       </div>`:''}`;
+}
+
+function renderStacks() {
+  return `
+    <div style="margin-bottom:26px">
+      <h3 style="font-size:15.5px;font-weight:700;margin-bottom:13px">Supplement Stacks</h3>
+      <div class="stacks-grid">
+        ${STACKS.map((st, i) => {
+          const logged = st.supplements.filter(n => S.loggedToday.some(l => l.name === n));
+          const allDone = logged.length === st.supplements.length;
+          return `
+            <div class="stack-card" style="border-top:3px solid ${st.color}">
+              <div class="stack-header">
+                <div>
+                  <div class="stack-name">${st.name}</div>
+                  <div class="stack-tagline">${st.tagline}</div>
+                </div>
+                <button class="btn-stack-log"
+                  style="background:${allDone?'transparent':st.color+'18'};color:${allDone?'#9ca3af':st.color};border-color:${allDone?'#d1d5db':st.color};"
+                  onclick="logStack(${i})" ${allDone?'disabled':''}>
+                  ${allDone ? 'Done' : 'Log All'}
+                </button>
+              </div>
+              <div class="stack-chips">
+                ${st.supplements.map(n => {
+                  const done = S.loggedToday.some(l => l.name === n);
+                  const sup  = DB.find(s => s.name === n);
+                  const c    = sup ? sup.color : '#6b7280';
+                  return `<span class="stack-chip${done?' stack-chip-done':''}"
+                    style="${done?`background:${c}1a;color:${c};border-color:${c}44;`:''}">
+                    ${done?`<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`:''}${n}
+                  </span>`;
+                }).join('')}
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+function logStack(idx) {
+  const st = S.loggedToday, stack = STACKS[idx];
+  const timeStr = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  let added = 0;
+  stack.supplements.forEach(name => {
+    if (st.some(l => l.name === name)) return;
+    const sup = DB.find(s => s.name === name);
+    if (!sup) return;
+    const dose = (sup.doses && sup.doses[1]) || (sup.doses && sup.doses[0]) || null;
+    S.loggedToday.push({
+      id: Date.now().toString() + Math.random().toString(36).slice(2),
+      name,
+      dose: dose ? dose.amount : '',
+      unit: dose ? dose.unit : 'mg',
+      macros: [], macro: '', notes: '', absorptionScore: 0,
+      date: todayStr(), time: timeStr
+    });
+    added++;
+  });
+  if (added) { save(); toast(`${stack.name} stack — ${added} supplement${added>1?'s':''} logged`); render(); }
+  else toast('All supplements in this stack are already logged today');
 }
 
 /* ── SEARCH ── */
@@ -2879,6 +2968,33 @@ const SLOTS = {
   afternoon: { label:'Afternoon', color:'#10b981', hours:[12,17] },
   evening:   { label:'Evening',   color:'#6366f1', hours:[18,23] }
 };
+const STACKS = [
+  {
+    name: 'Gym',
+    tagline: 'Strength, endurance & recovery',
+    color: '#f59e0b',
+    supplements: ['Creatine','Whey Protein','Vitamin D3','Magnesium','Omega-3 (Fish Oil)','Zinc','L-Citrulline','Beta-Alanine']
+  },
+  {
+    name: 'Sleep',
+    tagline: 'Wind down & restore',
+    color: '#6366f1',
+    supplements: ['Melatonin','Magnesium','Ashwagandha','L-Theanine','Glycine']
+  },
+  {
+    name: 'Focus',
+    tagline: 'Mental clarity & drive',
+    color: '#0ea5e9',
+    supplements: ['Alpha-GPC','L-Theanine','Lion\'s Mane Mushroom','Rhodiola Rosea','Panax Ginseng']
+  },
+  {
+    name: 'Study',
+    tagline: 'Memory, retention & calm',
+    color: '#10b981',
+    supplements: ['Bacopa Monnieri','Phosphatidylserine','Lion\'s Mane Mushroom','Ginkgo Biloba','L-Theanine']
+  }
+];
+
 const DAYS       = ['mon','tue','wed','thu','fri','sat','sun'];
 const DAY_LABELS = ['M','T','W','T','F','S','S'];
 
