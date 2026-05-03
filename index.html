@@ -181,17 +181,19 @@
     .score-row strong { color: var(--text); }
     .score-bar { height: 7px; border-radius: 4px; background: #e8e3da; overflow: hidden; }
     .score-fill { height: 100%; border-radius: 4px; transition: width .5s ease; }
-    .sc-excellent .score-fill { background: var(--primary); }
-    .sc-good      .score-fill { background: var(--warning); }
-    .sc-poor      .score-fill { background: var(--danger); }
+    .sc-excellent  .score-fill { background: #1e4d35; }
+    .sc-good       .score-fill { background: #588768; }
+    .sc-suboptimal .score-fill { background: #95d5b2; }
+    .sc-poor       .score-fill { background: #E5F6DF; }
 
     .score-pill {
       display: inline-flex; align-items: center; gap: 4px;
       padding: 3px 9px; border-radius: 9999px; font-size: 11.5px; font-weight: 600;
     }
-    .sp-excellent { background: #d6ebdc; color: #154f2f; }
-    .sp-good      { background: #fef3c7; color: #92400e; }
-    .sp-poor      { background: #fee2e2; color: #991b1b; }
+    .sp-excellent  { background: #1e4d35; color: #fff; }
+    .sp-good       { background: #d6ebdc; color: #2d6a4f; }
+    .sp-suboptimal { background: #e8f5ec; color: #588768; }
+    .sp-poor       { background: #fee2e2; color: #991b1b; }
 
     /* ── ALERTS ── */
     .alert {
@@ -451,9 +453,9 @@
       transition:all .15s;
     }
     .mac-btn:hover { border-color:var(--primary); color:var(--primary-dark); }
-    .mac-fat.sel     { background:#fef3c7; border-color:#f59e0b; color:#92400e; }
-    .mac-carbs.sel   { background:#dbeafe; border-color:#3b82f6; color:#1e40af; }
-    .mac-protein.sel { background:#fce7f3; border-color:#ec4899; color:#9d174d; }
+    .mac-fat.sel     { background:#d6ebdc; border-color:#588768; color:#2d6a4f; }
+    .mac-carbs.sel   { background:#d6ebdc; border-color:#588768; color:#2d6a4f; }
+    .mac-protein.sel { background:#d6ebdc; border-color:#588768; color:#2d6a4f; }
     .mac-nofood.sel  { background:#f1f5f9; border-color:#64748b; color:#334155; }
 
     /* ── LIVE SCORE BOX ── */
@@ -1518,9 +1520,17 @@ function macroBadgeCls(macro) {
   return m[macro]||'badge-food';
 }
 
+function absorptionTier(score) {
+  return score>=80?'Optimal':score>=65?'Good':score>=45?'Suboptimal':'Poor';
+}
+function absorptionPillCls(score) {
+  return score>=80?'sp-excellent':score>=65?'sp-good':score>=45?'sp-suboptimal':'sp-poor';
+}
+function absorptionBarCls(score) {
+  return score>=80?'sc-excellent':score>=65?'sc-good':score>=45?'sc-suboptimal':'sc-poor';
+}
 function scorePill(label, score) {
-  const cls = score>=75?'sp-excellent':score>=50?'sp-good':'sp-poor';
-  return `<span class="score-pill ${cls}">${label}</span>`;
+  return `<span class="score-pill ${absorptionPillCls(score)}">${label}</span>`;
 }
 
 function scoreBar(score, label) {
@@ -1543,51 +1553,67 @@ function liveScore(sup, macros) {
   const hasNofood = sel.includes('nofood');
   const foodSel   = sel.filter(m => m !== 'nofood');
 
-  let score, label, msg;
+  let score, tier, msg;
 
-  // ── exact match (e.g. opt='fat' and user selected fat) ──
   if (sel.includes(opt)) {
-    score = sup.absorption.score; label = 'Excellent';
-    msg = `✅ Optimal! ${sup.name} absorbs best ${sup.absorption.macroLabel}.`;
-
-  // ── supplement just needs "any food" and user picked at least one food macro ──
+    score = sup.absorption.score; tier = 'Optimal';
+    msg = `${sup.name} absorbs best ${sup.absorption.macroLabel}.`;
   } else if (opt === 'food' && foodSel.length > 0) {
-    score = Math.round(sup.absorption.score * 0.88); label = 'Excellent';
-    msg = `✅ Great — any food works well for ${sup.name}.`;
-
-  // ── supplement prefers empty/no-food and user selected No Food ──
+    score = Math.round(sup.absorption.score * 0.88); tier = 'Optimal';
+    msg = `Any food works well for ${sup.name}.`;
   } else if (hasNofood && (opt === 'empty' || opt === 'water')) {
-    score = sup.absorption.score; label = 'Excellent';
-    msg = `✅ Optimal! ${sup.name} absorbs best on an empty stomach.`;
-
-  // ── supplement needs fat or protein and user has one of them ──
+    score = sup.absorption.score; tier = 'Optimal';
+    msg = `${sup.name} absorbs best on an empty stomach.`;
   } else if (['fat','protein'].includes(opt) && foodSel.some(m => ['fat','protein'].includes(m))) {
-    score = Math.round(sup.absorption.score * 0.78); label = 'Good';
-    msg = `⚡ Good, but best with ${sup.absorption.macroLabel} specifically.`;
-
-  // ── supplement needs food but user chose No Food ──
+    score = Math.round(sup.absorption.score * 0.78); tier = 'Good';
+    msg = `Close — best with ${sup.absorption.macroLabel} specifically.`;
   } else if (hasNofood && !['empty','water'].includes(opt)) {
-    score = Math.round(sup.absorption.score * 0.38); label = 'Poor';
-    msg = `⚠️ Poor without food. ${sup.name} needs ${sup.absorption.macroLabel} for proper absorption.`;
-
-  // ── supplement needs empty stomach but user is eating ──
+    score = Math.round(sup.absorption.score * 0.38); tier = 'Poor';
+    msg = `${sup.name} needs ${sup.absorption.macroLabel} for proper absorption.`;
   } else if ((opt === 'empty' || opt === 'water') && foodSel.length > 0) {
-    score = Math.round(sup.absorption.score * 0.58); label = 'Moderate';
-    msg = `⚡ Food slows absorption. ${sup.name} absorbs faster on an empty stomach.`;
-
+    score = Math.round(sup.absorption.score * 0.58); tier = 'Suboptimal';
+    msg = `Food slows absorption. ${sup.name} absorbs faster on an empty stomach.`;
   } else {
-    score = Math.round(sup.absorption.score * 0.62); label = 'Moderate';
-    msg = `⚡ Can be better. Optimal: ${sup.absorption.macroLabel}.`;
+    score = Math.round(sup.absorption.score * 0.62); tier = 'Suboptimal';
+    msg = `Can be improved — optimal pairing: ${sup.absorption.macroLabel}.`;
   }
 
-  const cls = score >= 75 ? 'sc-excellent' : score >= 50 ? 'sc-good' : 'sc-poor';
   return `
     <div class="live-score">
-      <div class="live-score-title">Live Absorption Score</div>
-      <div class="score-wrap ${cls}">
-        <div class="score-row"><span>${msg}</span><strong>${score}%</strong></div>
+      <div class="live-score-title">Live Absorption</div>
+      <div class="score-wrap ${absorptionBarCls(score)}">
+        <div class="score-row"><span>${msg}</span><strong>${tier}</strong></div>
         <div class="score-bar"><div class="score-fill" style="width:${score}%"></div></div>
       </div>
+    </div>`;
+}
+
+function renderAbsorptionSummary() {
+  const scored = S.loggedToday.filter(l => l.absorptionScore);
+  if (!scored.length) return '';
+  const avg  = Math.round(scored.reduce((s,l) => s + l.absorptionScore, 0) / scored.length);
+  const tier = absorptionTier(avg);
+  const cls  = absorptionBarCls(avg);
+  const clrMap = { Optimal:'var(--primary)', Good:'#0ea5e9', Suboptimal:'var(--warning)', Poor:'var(--danger)' };
+  const clr  = clrMap[tier];
+  const worst = [...scored].sort((a,b) => a.absorptionScore - b.absorptionScore)[0];
+  const worstSup = worst.absorptionScore < 65 ? DB.find(s => s.name === worst.name) : null;
+  return `
+    <div class="card" style="margin-top:18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:14px;font-weight:700">Today's Absorption</span>
+        <span style="font-size:13px;font-weight:700;color:${clr}">${tier}</span>
+      </div>
+      <div class="score-wrap ${cls}" style="margin-top:0">
+        <div class="score-row">
+          <span>${scored.length} of ${S.loggedToday.length} supplement${S.loggedToday.length>1?'s':''} pairing recorded</span>
+        </div>
+        <div class="score-bar"><div class="score-fill" style="width:${avg}%"></div></div>
+      </div>
+      ${worstSup?`
+        <div style="margin-top:10px;padding:9px 12px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--text-muted)">
+          <strong style="color:var(--text)">Tip — ${worst.name}:</strong> ${worstSup.absorption.tip}
+        </div>`:''}
     </div>`;
 }
 
@@ -1713,13 +1739,15 @@ function vDashboard() {
               ${timingBadge(sup.timing)}
               <span class="badge ${macroBadgeCls(sup.absorption.macro)}">${sup.absorption.macroLabel.split(' ').slice(1).join(' ')}</span>
               ${log.macro?`<span style="color:var(--text-muted);font-size:11px">ate: ${log.macro}</span>`:''}
-              ${log.absorptionScore?`${scorePill(log.absorptionScore>=75?'Excellent':log.absorptionScore>=50?'Good':'Poor',log.absorptionScore)}`:''}
+              ${log.absorptionScore?`${scorePill(absorptionTier(log.absorptionScore),log.absorptionScore)}`:''}
               <span style="color:var(--text-muted);font-size:11px">${log.time}</span>
             </div>
           </div>
           <button class="del-btn" onclick="delLog('${log.id}')" title="Remove">×</button>
         </div>`;
     }).join('')}
+
+    ${renderAbsorptionSummary()}
 
     ${logged.length?`
       <div style="margin-top:22px">
@@ -2240,7 +2268,7 @@ function renderHistoryList(grouped, dates, today) {
               <div class="hm">
                 ${log.time?log.time+' · ':''}
                 ${log.macro?'Eaten with: '+log.macro+' · ':''}
-                ${aScore?`Absorption: ${aScore}% · `:''}
+                ${aScore?`Absorption: ${absorptionTier(aScore)} · `:''}
                 ${log.notes||''}
               </div>
             </div>
@@ -2304,7 +2332,7 @@ function renderCalendar(grouped, today) {
               <div class="hm">
                 ${log.time?log.time+' · ':''}
                 ${log.macro?'Eaten with: '+log.macro+' · ':''}
-                ${aScore?`Absorption: ${aScore}% · `:''}
+                ${aScore?`Absorption: ${absorptionTier(aScore)} · `:''}
                 ${log.notes||''}
               </div>
             </div>
