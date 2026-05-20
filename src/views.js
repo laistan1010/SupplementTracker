@@ -190,7 +190,7 @@ function renderSearchResults(q) {
             <div class="sn">${sup.name}</div>
             <div class="sc">${sup.category}</div>
           </div>
-          <button class="btn btn-outline btn-sm" onclick="quickLog('${sup.name}')">${t('btn_log_quick')}</button>
+          <button class="btn btn-outline btn-sm" onclick="quickLog('${sup.name.replace(/'/g,"\\'")}')">${t('btn_log_quick')}</button>
         </div>
         <div class="badges-row">
           ${timingBadge(sup.timing)}
