@@ -54,6 +54,35 @@ function quickLog(name) {
   S.logForm.macros = [];
   go('log');
 }
+
+// Log a multi-ingredient product (e.g. a scanned multivitamin): persist it, expand to N
+// per-ingredient entries, run the conflict engine. Returns the immediate read data so the
+// scan flow can show the payoff inline (scan = input whoa, conflict read = output whoa).
+function logProduct(product) {
+  if (!product || !Array.isArray(product.ingredients) || !product.ingredients.length) return null;
+  if (!product.id) product.id = 'prod-' + Date.now();
+  if (!S.products.some(p => p.id === product.id)) S.products.push(product);
+
+  // Fold any custom / AI-suggested ingredients into the runtime DB so conflict/absorption see them.
+  if (Array.isArray(product.customSupps) && product.customSupps.length) {
+    product.customSupps.forEach(cs => {
+      if (cs && cs.name && !S.customSupps.some(x => x.name.toLowerCase() === cs.name.toLowerCase()))
+        S.customSupps.push(cs);
+    });
+    DB = mergeCustomSupps(DB, S.customSupps);
+  }
+
+  const entries = expandProductToEntries(product);
+  entries.forEach(e => S.loggedToday.push(e));
+  save();
+
+  return {
+    product,
+    entries,
+    conflicts:    detectConflicts(S.loggedToday),      // within-product + cross-product (name-keyed)
+    medConflicts: detectMedConflicts(S.loggedToday)    // vs S.profile.medications (e.g. K2 x Warfarin)
+  };
+}
 // ── DELETE WITH 5-SECOND UNDO ────────────────────────
 let _undo = null; // { item, idx, timer, el }
 
@@ -1058,6 +1087,7 @@ function init() {
     console.info(`ℹ️ data/supplements.js not found — using inline fallback data (${DB.length} supplements).`);
   }
   loadState();
+  DB = mergeCustomSupps(DB, S.customSupps);   // fold in custom / AI-suggested ingredients from prior scans
   render();
   updateStaticText();
   initNotifications();     // request browser notif permission + start 1-min interval

@@ -10,7 +10,11 @@ let S = {
   history: [],
   logForm: { supplement:'', dose:'', unit:'mg', macros:[], notes:'' },
   schedule: {},        // { "Supplement Name": { slot:"morning", days:["mon","tue",...] } }
-  notifiedSlots: {}    // { "2026-04-18_morning": true } — prevents re-firing browser notif
+  notifiedSlots: {},   // { "2026-04-18_morning": true } — prevents re-firing browser notif
+  products: [],        // user-built multi-ingredient products (e.g. a multivitamin scanned from its label)
+                       //   { id, name, ingredients:[{name,dose,unit,verified}], createdAt }
+  customSupps: []      // ingredients not in the builtin DB (unmatched / AI-suggested), merged into runtime DB
+                       //   { name, custom:true, aiSuggested?, aiNote?, conflicts:[], absorption? }
 };
 
 function loadState() {
@@ -20,6 +24,8 @@ function loadState() {
     if (d.history)       S.history       = d.history;
     if (d.schedule)      S.schedule      = d.schedule;
     if (d.notifiedSlots) S.notifiedSlots = d.notifiedSlots;
+    if (d.products)      S.products      = d.products;      // additive: absent in old st_v2 data → stays []
+    if (d.customSupps)   S.customSupps   = d.customSupps;
     if (d.loggedToday) {
       const today = todayStr();
       S.loggedToday = d.loggedToday.filter(l => l.date === today);
@@ -36,7 +42,9 @@ function save() {
       loggedToday: S.loggedToday,
       history: S.history,
       schedule: S.schedule,
-      notifiedSlots: S.notifiedSlots
+      notifiedSlots: S.notifiedSlots,
+      products: S.products,
+      customSupps: S.customSupps
     }));
   } catch(e) {
     if (e.name === 'QuotaExceededError') toast(t('toast_storage_full'));
