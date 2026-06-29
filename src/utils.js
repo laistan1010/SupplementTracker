@@ -78,6 +78,54 @@ function detectMedConflicts(loggedList) {
 }
 
 // ════════════════════════════════════════════════════
+//  PRODUCT MODEL  (multi-ingredient products → log entries)
+// ════════════════════════════════════════════════════
+//
+//   Product { id, name, ingredients:[{name,dose,unit,verified}] }
+//        │  log product
+//        ▼
+//   expandProductToEntries() → N entries (same shape app.js pushes), tagged productId/productName
+//        ▼
+//   detectConflicts(S.loggedToday)   ← UNCHANGED, name-keyed; within-product conflicts fire for free
+//
+// SAFETY-CRITICAL: expandProductToEntries MUST emit one entry per ingredient and drop NONE.
+// A dropped ingredient = a real conflict (e.g. K2 vs Warfarin) silently never firing.
+
+function expandProductToEntries(product) {
+  if (!product || !Array.isArray(product.ingredients)) return [];
+  const stamp = Date.now();
+  const time  = new Date().toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+  const today = todayStr();
+  return product.ingredients.map((ing, i) => ({
+    id:          `${stamp}-${i}`,            // unique per ingredient (same ms would collide)
+    name:        ing.name,
+    dose:        ing.dose != null ? String(ing.dose) : '',
+    unit:        ing.unit || 'mg',
+    macros:      [],
+    macro:       '',
+    notes:       '',
+    productId:   product.id,                 // lets a product's entries be grouped / removed as a unit
+    productName: product.name,
+    date:        today,
+    time
+  }));
+}
+
+// Merge custom / AI-suggested ingredients into the runtime DB. Builtin wins on name collision.
+// Idempotent: re-running with the same custom list adds nothing (names already present).
+function mergeCustomSupps(baseDB, custom) {
+  if (!Array.isArray(custom) || !custom.length) return baseDB;
+  const have = new Set(baseDB.map(s => s.name.toLowerCase()));
+  const additions = custom.filter(c => c && c.name && !have.has(c.name.toLowerCase()));
+  return additions.length ? [...baseDB, ...additions] : baseDB;
+}
+
+// CommonJS export so the zero-dep test file can require these pure functions.
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { detectConflicts, detectMedConflicts, expandProductToEntries, mergeCustomSupps };
+}
+
+// ════════════════════════════════════════════════════
 //  NAVIGATION
 // ════════════════════════════════════════════════════
 function go(view) {

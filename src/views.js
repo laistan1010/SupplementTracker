@@ -544,6 +544,10 @@ function vLog() {
 
     <div class="card" style="max-width:560px" id="logForm">
 
+      <button type="button" class="btn btn-outline" style="width:100%;margin-bottom:14px" onclick="scanOpen()">
+        📷 ${LANG==='zh'?'影標籤自動入(綜合維他命)':'Scan a label (multivitamins)'}
+      </button>
+
       <div class="form-group">
         <label>${t('supp_label')}</label>
         <div class="ta-wrap">
