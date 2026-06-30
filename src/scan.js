@@ -68,10 +68,32 @@ function scanOpen() {
 function scanHandleFile(input) {
   const file = input && input.files && input.files[0];
   if (!file) return;
+  _scanLoading(_sl('準備緊相…', 'Preparing photo…'));
   const reader = new FileReader();
-  reader.onload = () => scanParse(reader.result);          // result = data:image/...;base64,...
+  reader.onload = () => _scanDownscale(reader.result, scanParse);   // shrink before upload
   reader.onerror = () => scanError(_sl('讀唔到張相,再試', 'Could not read the photo, try again'));
   reader.readAsDataURL(file);
+}
+
+// Phone photos are multi-MB at full resolution, which pushes the vision call past the
+// function time limit (a label needs nowhere near that detail). Downscale to MAX_DIM on
+// the long edge and re-encode as JPEG; fall back to the original if anything fails.
+function _scanDownscale(dataUrl, cb) {
+  const MAX_DIM = 1280;
+  const img = new Image();
+  img.onload = () => {
+    try {
+      let w = img.width, h = img.height;
+      const scale = Math.min(1, MAX_DIM / Math.max(w, h));
+      w = Math.round(w * scale); h = Math.round(h * scale);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      cb(c.toDataURL('image/jpeg', 0.85));
+    } catch (_) { cb(dataUrl); }
+  };
+  img.onerror = () => cb(dataUrl);
+  img.src = dataUrl;
 }
 
 // ── STATE: loading ──
