@@ -79,7 +79,7 @@ module.exports = async (req, res) => {
       if (image.length > MAX_IMAGE_CHARS) { res.status(413).json({ error: 'image_too_large' }); return; }
 
       const content = await callGrok({
-        model: body._model || VISION_MODEL,
+        model: VISION_MODEL,
         messages: [
           { role: 'system', content: PARSE_SYSTEM },
           { role: 'user', content: [
@@ -124,6 +124,6 @@ module.exports = async (req, res) => {
     res.status(200).json({ interactions });
 
   } catch (e) {
-    res.status(502).json({ error: 'upstream', detail: e.message, upstream: e.detail || null });
+    res.status(502).json({ error: 'upstream', detail: e.message });
   }
 };
