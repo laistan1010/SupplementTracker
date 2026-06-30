@@ -17,11 +17,19 @@ const TEXT_MODEL     = process.env.XAI_TEXT_MODEL   || 'grok-4.3';
 const MAX_IMAGE_CHARS = 9000000; // ~6.5 MB image as a base64 data URL; reject larger to bound cost/latency
 
 const PARSE_SYSTEM = [
-  'You read a Supplement Facts / Nutrition label from one image.',
+  'You are an OCR transcriber for a Supplement Facts / Nutrition panel. Transcribe ONLY what is literally printed.',
   'Return ONLY a JSON object, no prose, no markdown fences:',
   '{"productName": string, "ingredients": [{"name": string, "dose": number|null, "unit": string}]}',
-  'List every ingredient row on the panel. dose is the numeric amount per serving (null if not printed).',
-  'unit is the printed unit (mg, mcg, IU, g, ...). Do not invent ingredients that are not on the label.'
+  '',
+  'STRICT RULES — follow exactly:',
+  '1. Copy each ingredient NAME verbatim as printed in the "Amount Per Serving" rows (e.g. "Organic Black Cumin Seed Oil", not a nutrient you associate with it).',
+  '2. Do NOT add, infer, or guess any ingredient. If it is not printed in the panel, it does not exist. Never output common supplements (Selenium, Vitamin E, Zinc, etc.) unless that exact word is printed.',
+  '3. Do NOT convert a chemical/excipient name into a nutrient name (e.g. "Tocopherol" is NOT "Vitamin E" here). Use the printed word.',
+  '4. IGNORE the "Other ingredients" line and capsule/excipient contents (gelatin, glycerin, water, softgel, tocopherol-as-preservative, silica, etc.). Only list the active rows in the facts panel.',
+  '5. IGNORE Calories, Total Fat, Saturated Fat, Sodium and other generic nutrition-facts rows unless they are the actual supplement active.',
+  '6. dose = the numeric amount per serving exactly as printed (null if not printed or unreadable). unit = the printed unit (mg, mcg, IU, g). Never guess a number.',
+  '7. If the panel is blurry or you are unsure of a name, transcribe what you can read; do NOT substitute a plausible-sounding ingredient.',
+  'A single-ingredient product is normal and common. Returning one ingredient is correct if only one is printed.'
 ].join('\n');
 
 const ASSESS_SYSTEM = [
@@ -80,11 +88,12 @@ module.exports = async (req, res) => {
 
       const content = await callGrok({
         model: VISION_MODEL,
+        temperature: 0,                 // literal transcription — minimise creative hallucination
         messages: [
           { role: 'system', content: PARSE_SYSTEM },
           { role: 'user', content: [
-            { type: 'text', text: 'Parse this supplement label into the required JSON.' },
-            { type: 'image_url', image_url: { url: image } }
+            { type: 'text', text: 'Transcribe this supplement label into the required JSON. Only what is printed.' },
+            { type: 'image_url', image_url: { url: image, detail: 'high' } }
           ] }
         ]
       });
