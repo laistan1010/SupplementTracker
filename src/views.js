@@ -262,7 +262,6 @@ function vSearch() {
       <h2>${t('search_heading')}</h2>
       <p>${t('search_desc').replace('{n}',DB.length)}</p>
     </div>
-    ${renderMyProducts()}
     <div class="search-wrap">
       <span class="search-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b0a89e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
       <input id="mainSearch" type="text"
@@ -573,6 +572,8 @@ function vLog() {
     </div>
 
     ${renderLogDueSection()}
+
+    ${renderMyProducts()}
 
     <div class="card" style="max-width:560px" id="logForm">
 
