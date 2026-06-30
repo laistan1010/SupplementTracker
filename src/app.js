@@ -121,6 +121,16 @@ function openProductDetail(id) {
   if (!p) return;
   _scanShell(renderProductDetail(p));
 }
+
+// Remove a whole logged product (all its ingredient entries for today) in one tap.
+function delProductLog(productId) {
+  const hit = S.loggedToday.filter(l => l.productId === productId);
+  if (!hit.length) return;
+  S.loggedToday = S.loggedToday.filter(l => l.productId !== productId);
+  save();
+  render();
+  toast((LANG === 'zh' ? '已移除 ' : 'Removed ') + (hit[0].productName || ''));
+}
 // ── DELETE WITH 5-SECOND UNDO ────────────────────────
 let _undo = null; // { item, idx, timer, el }
 

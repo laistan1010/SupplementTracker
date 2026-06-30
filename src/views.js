@@ -3,10 +3,32 @@
 //  VIEWS
 // ════════════════════════════════════════════════════
 
+// Group log entries for DISPLAY so a scanned product shows as one unit ("EAA · 9 ingredients")
+// instead of one row per ingredient. Manually-logged singles stay individual. Conflict/absorption
+// engines still run on the raw entries — this only changes what the lists render.
+function groupLogEntries(list) {
+  const units = [];
+  const at = {};
+  list.forEach(e => {
+    if (e.productId) {
+      if (at[e.productId] == null) {
+        at[e.productId] = units.length;
+        units.push({ type:'product', productId:e.productId, name:e.productName || 'Product', items:[e], time:e.time, date:e.date });
+      } else {
+        units[at[e.productId]].items.push(e);
+      }
+    } else {
+      units.push({ type:'single', entry:e });
+    }
+  });
+  return units;
+}
+
 /* ── DASHBOARD ── */
 function vDashboard() {
   const today = todayStr();
   const logged = S.loggedToday;
+  const units  = groupLogEntries(logged);          // products collapse to one unit for display + counts
   const allDates = new Set([...S.history.map(h=>h.date),...(logged.length?[today]:[])]);
   const conflicts    = detectConflicts(logged);
   const medConflicts = detectMedConflicts(logged);
@@ -24,7 +46,7 @@ function vDashboard() {
       <div class="dash-hero-overlay">
         <div class="dash-hero-date">${new Date().toLocaleDateString(LANG==='zh'?'zh-HK':'en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
         <div class="dash-hero-name">${S.profile.name?`${t('dash_good_day')} ${S.profile.name}`:t('dash_welcome')}</div>
-        <div class="dash-hero-sub">${logged.length?t('dash_logged_today').replace('{n}',logged.length).replace('{s}',logged.length>1?'s':''):t('dash_logged_0')}</div>
+        <div class="dash-hero-sub">${units.length?t('dash_logged_today').replace('{n}',units.length).replace('{s}',units.length>1?'s':''):t('dash_logged_0')}</div>
       </div>
     </div>
 
@@ -41,7 +63,7 @@ function vDashboard() {
     <div class="stats-grid">
       <div class="stat-card">
         <div class="s-label">${t('stat_logged_today')}</div>
-        <div class="s-value" style="color:var(--primary)">${logged.length}</div>
+        <div class="s-value" style="color:var(--primary)">${units.length}</div>
         <div class="s-sub">${t('stat_supplements')}</div>
       </div>
       <div class="stat-card">
@@ -107,7 +129,23 @@ function vDashboard() {
         <h3>${t('empty_none_logged')}</h3>
         <p>${t('empty_click_log')}</p>
       </div>`
-    :logged.map(log=>{
+    :groupLogEntries(logged).map(u=>{
+      if(u.type==='product'){
+        const hasConflict=u.items.some(it=>conflicts.some(c=>c.a===it.name||c.b===it.name));
+        return `
+        <div class="log-item">
+          <div class="log-emoji" style="background:var(--primary-light);color:var(--primary);font-size:15px;font-weight:800;cursor:pointer" onclick="openProductDetail('${u.productId}')">📦</div>
+          <div class="li" style="cursor:pointer" onclick="openProductDetail('${u.productId}')">
+            <div class="ln">${_esc(u.name)}${hasConflict?` <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`:''}</div>
+            <div class="lm">
+              <span>${u.items.length} ${_sl('種成分','ingredients')}</span>
+              <span style="color:var(--text-muted);font-size:11px">${u.time||''}</span>
+            </div>
+          </div>
+          <button class="del-btn" onclick="delProductLog('${u.productId}')" title="Remove">×</button>
+        </div>`;
+      }
+      const log=u.entry;
       const sup=DB.find(s=>s.name===log.name);
       if(!sup) return '';
       const hasConflict=conflicts.some(c=>c.a===log.name||c.b===log.name);
@@ -129,10 +167,10 @@ function vDashboard() {
         </div>`;
     }).join('')}
 
-    ${logged.length?`
+    ${logged.some(l=>!l.productId)?`
       <div style="margin-top:22px">
         <h3 style="font-size:14.5px;font-weight:700;margin-bottom:10px">${t('today_tips')}</h3>
-        ${logged.map(log=>{
+        ${logged.filter(l=>!l.productId).map(log=>{
           const sup=DB.find(s=>s.name===log.name);
           if(!sup) return '';
           return `
@@ -173,9 +211,10 @@ function renderStacks() {
 function renderSearchResults(q) {
   const lq = (q||'').toLowerCase();
   const userTerms = [...(S.profile.conditions||[]),...(S.profile.medications||[])].map(x=>x.toLowerCase());
+  const catalog = DB.filter(s=>!s.aiSuggested);   // Search = curated catalogue only; scanned AI customs are match-only, not browsable
   const list = lq
-    ? DB.filter(s=>s.name.toLowerCase().includes(lq)||s.category.toLowerCase().includes(lq)||(s.aliases||[]).some(a=>a.toLowerCase().includes(lq)))
-    : DB;
+    ? catalog.filter(s=>s.name.toLowerCase().includes(lq)||s.category.toLowerCase().includes(lq)||(s.aliases||[]).some(a=>a.toLowerCase().includes(lq)))
+    : catalog;
 
   if (list.length===0) return `<div class="empty"><div class="ei"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div><h3>${t('search_no_results')}</h3><p>${t('search_try_diff')}</p></div>`;
 
@@ -225,37 +264,26 @@ function renderSearchResults(q) {
 }
 
 // Renders the search PAGE shell (input stays alive; only #sr gets re-rendered)
-// "My Products" — products scanned earlier (S.products) shown at the top of Search so the user
-// can re-log the whole thing in one tap instead of re-scanning. Names reflect any edits made on
-// the review screen before Confirm, so a corrected product stays corrected on every reuse.
+// "My Products" — products scanned earlier (S.products), shown as a compact grid (5-6 per row on
+// desktop). Tap a tile to open the detail modal (which has Log / Rename / Remove). Names reflect
+// any edits made on the review screen before Confirm, so a corrected product stays corrected.
 function renderMyProducts() {
   if (!S.products || !S.products.length) return '';
   return `
     <div style="margin-bottom:22px">
       <h3 style="font-size:15.5px;font-weight:700;margin-bottom:3px">${t('my_products')}</h3>
       <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">${t('my_products_desc')}</p>
-      ${S.products.map(p=>{
-        const ings = Array.isArray(p.ingredients) ? p.ingredients : [];
-        const summary = ings.map(i=>i.name).join(', ');
-        return `
-          <div class="sup-card" style="margin-bottom:10px">
-            <div style="display:flex;align-items:flex-start;gap:10px">
-              <div style="flex:1;min-width:0;cursor:pointer" onclick="openProductDetail('${p.id}')">
-                <div class="sn">${_esc(p.name)}</div>
-                <div class="sc">${ings.length} ${t('product_ings_unit')}</div>
-                <div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.5">${_esc(summary)}</div>
-              </div>
-              <div style="display:flex;gap:4px;flex-shrink:0">
-                <button class="del-btn" onclick="renameSavedProduct('${p.id}')" title="${t('btn_rename')}" style="font-size:13px">✏️</button>
-                <button class="del-btn" onclick="delSavedProduct('${p.id}')" title="${t('btn_remove')}">×</button>
-              </div>
-            </div>
-            <div style="display:flex;gap:8px;margin-top:10px">
-              <button class="btn btn-outline btn-sm" style="flex:1" onclick="openProductDetail('${p.id}')">${t('btn_details')}</button>
-              <button class="btn btn-primary btn-sm" style="flex:1" onclick="logSavedProduct('${p.id}')">${t('btn_log_all')}</button>
-            </div>
-          </div>`;
-      }).join('')}
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px">
+        ${S.products.map(p=>{
+          const n = (Array.isArray(p.ingredients) ? p.ingredients : []).length;
+          return `
+            <div class="prod-tile" onclick="openProductDetail('${p.id}')"
+                 style="cursor:pointer;border:1px solid var(--border);border-radius:10px;padding:11px 12px;background:#fff">
+              <div style="font-weight:600;font-size:13px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${_esc(p.name)}</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:5px">${n} ${t('product_ings_unit')}</div>
+            </div>`;
+        }).join('')}
+      </div>
     </div>`;
 }
 
@@ -339,7 +367,11 @@ function renderProductDetail(product) {
       ${cards}
       <div style="font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.5">${_sl('🟡 AI 推測 = 唔喺已核實資料庫,僅供參考,非醫療建議。', '🟡 AI-suggested = not in the verified database, for reference only, not medical advice.')}</div>
     </div>
-    <div class="rm-actions" style="margin-top:10px">
+    <div style="display:flex;gap:6px;margin-top:10px">
+      <button class="btn btn-outline btn-sm" style="flex:1" onclick="renameSavedProduct('${product.id}');openProductDetail('${product.id}')">${t('btn_rename')}</button>
+      <button class="btn btn-outline btn-sm" style="flex:1" onclick="delSavedProduct('${product.id}');scanClose()">${t('btn_remove')}</button>
+    </div>
+    <div class="rm-actions" style="margin-top:8px">
       <button class="btn btn-outline" style="flex:1" onclick="scanClose()">${_sl('關閉', 'Close')}</button>
       <button class="btn btn-primary" style="flex:1" onclick="logSavedProduct('${product.id}');scanClose()">${t('btn_log_all')}</button>
     </div>`;
@@ -349,7 +381,7 @@ function vSearch() {
   return `
     <div class="page-header">
       <h2>${t('search_heading')}</h2>
-      <p>${t('search_desc').replace('{n}',DB.length)}</p>
+      <p>${t('search_desc').replace('{n}',DB.filter(s=>!s.aiSuggested).length)}</p>
     </div>
     <div class="search-wrap">
       <span class="search-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b0a89e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
@@ -662,8 +694,6 @@ function vLog() {
 
     ${renderLogDueSection()}
 
-    ${renderMyProducts()}
-
     <div class="card" style="max-width:560px" id="logForm">
 
       <button type="button" class="btn btn-outline" style="width:100%;margin-bottom:14px" onclick="scanOpen()">
@@ -704,7 +734,9 @@ function vLog() {
       </div>
 
       <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="submitLog()">${t('btn_log_submit')}</button>
-    </div>`;
+    </div>
+
+    ${renderMyProducts()}`;
 }
 
 /* ── HISTORY ── */
@@ -757,13 +789,26 @@ function setHistView(v) {
 }
 
 function renderHistoryList(grouped, dates, today) {
-  return dates.map(dt=>`
+  return dates.map(dt=>{
+    const units = groupLogEntries(grouped[dt]);
+    return `
     <div style="margin-bottom:22px">
       <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:9px">
         ${dt===today?t('today_prefix')+' — ':''}${fmtDate(dt)}
-        <span style="font-weight:400;margin-left:5px">(${grouped[dt].length} supplement${grouped[dt].length!==1?'s':''})</span>
+        <span style="font-weight:400;margin-left:5px">(${units.length} supplement${units.length!==1?'s':''})</span>
       </div>
-      ${grouped[dt].map(log=>{
+      ${units.map(u=>{
+        if(u.type==='product'){
+          return `
+          <div class="hist-item">
+            <div class="hist-dot" style="background:var(--primary)"></div>
+            <div class="hd" style="flex:1">
+              <div class="hn">📦 ${_esc(u.name)}</div>
+              <div class="hm">${u.time?u.time+' · ':''}${u.items.length} ${_sl('種成分','ingredients')}</div>
+            </div>
+          </div>`;
+        }
+        const log=u.entry;
         const sup=DB.find(s=>s.name===log.name);
         const aScore=log.absorptionScore;
         return `
@@ -780,7 +825,7 @@ function renderHistoryList(grouped, dates, today) {
             </div>
           </div>`;
       }).join('')}
-    </div>`).join('');
+    </div>`;}).join('');
 }
 
 function renderCalendar(grouped, today) {
