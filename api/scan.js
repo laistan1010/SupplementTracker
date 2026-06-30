@@ -124,6 +124,6 @@ module.exports = async (req, res) => {
     res.status(200).json({ interactions });
 
   } catch (e) {
-    res.status(502).json({ error: 'upstream', detail: e.message });
+    res.status(502).json({ error: 'upstream', detail: e.message, upstream: e.detail || null });
   }
 };
