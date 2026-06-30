@@ -102,6 +102,18 @@ function delSavedProduct(id) {
   save();
   render();
 }
+
+function renameSavedProduct(id) {
+  const p = S.products.find(x => x.id === id);
+  if (!p) return;
+  const name = prompt(t('prompt_rename'), p.name);
+  if (name == null) return;            // cancelled
+  const trimmed = name.trim();
+  if (!trimmed) return;                // empty -> keep old name
+  p.name = trimmed;
+  save();
+  render();
+}
 // ── DELETE WITH 5-SECOND UNDO ────────────────────────
 let _undo = null; // { item, idx, timer, el }
 

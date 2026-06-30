@@ -245,7 +245,10 @@ function renderMyProducts() {
                 <div class="sc">${ings.length} ${t('product_ings_unit')}</div>
                 <div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.5">${_esc(summary)}</div>
               </div>
-              <button class="del-btn" onclick="delSavedProduct('${p.id}')" title="${t('btn_remove')}">×</button>
+              <div style="display:flex;gap:4px;flex-shrink:0">
+                <button class="del-btn" onclick="renameSavedProduct('${p.id}')" title="${t('btn_rename')}" style="font-size:13px">✏️</button>
+                <button class="del-btn" onclick="delSavedProduct('${p.id}')" title="${t('btn_remove')}">×</button>
+              </div>
             </div>
             <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" onclick="logSavedProduct('${p.id}')">${t('btn_log_all')}</button>
           </div>`;
