@@ -149,11 +149,15 @@ async function scanParse(dataUrl) {
   _scan.productName = data.productName || '';
   _scan.rows = ings.map(ing => {
     const supp = _scanMatchSupp(ing.name);
+    // Only a curated builtin entry counts as "Verified". A match against a previously-saved
+    // AI-suggested custom supp (aiSuggested) must NOT show a green check — it was never verified,
+    // and it shouldn't override the freshly-scanned name either.
+    const curated = !!(supp && !supp.aiSuggested);
     return {
-      name: supp ? supp.name : ing.name,         // prefer the canonical DB name when matched
+      name: curated ? supp.name : ing.name,      // canonical name only for curated matches
       dose: ing.dose != null ? String(ing.dose) : '',
-      unit: ing.unit || (supp && supp.doses && supp.doses[0] && supp.doses[0].unit) || 'mg',
-      verified: !!supp
+      unit: ing.unit || (curated && supp.doses && supp.doses[0] && supp.doses[0].unit) || 'mg',
+      verified: curated
     };
   });
   scanRenderReview();

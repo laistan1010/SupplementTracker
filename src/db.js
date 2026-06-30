@@ -335,7 +335,7 @@ let DB = [  // ← overridden at runtime by data/supplements.json when server is
     healthWarnings:["lactose intolerance","dairy allergy","kidney disease"]
   },
   {
-    name:"BCAAs", aliases:["Branched-Chain Amino Acids","Leucine","Isoleucine","Valine","BCAA"],
+    name:"BCAAs", aliases:["Branched-Chain Amino Acids","BCAA"],
     category:"Gym — Amino Acids", emoji:"🔬", color:"#ec4899",
     timing:"anytime",
     timingNote:"During fasted training, intra-workout, or between meals. Less useful if you already eat adequate protein.",
