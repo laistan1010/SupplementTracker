@@ -12,8 +12,8 @@
 // spending cap there too (a function this open should never be able to run up an unbounded bill).
 
 const XAI_URL        = 'https://api.x.ai/v1/chat/completions';
-const VISION_MODEL   = process.env.XAI_VISION_MODEL || 'grok-2-vision-1212'; // verify current id in xAI docs
-const TEXT_MODEL     = process.env.XAI_TEXT_MODEL   || 'grok-2-1212';
+const VISION_MODEL   = process.env.XAI_VISION_MODEL || 'grok-4.3'; // current vision-capable model (verified via /v1/models 2026-06)
+const TEXT_MODEL     = process.env.XAI_TEXT_MODEL   || 'grok-4.3';
 const MAX_IMAGE_CHARS = 9000000; // ~6.5 MB image as a base64 data URL; reject larger to bound cost/latency
 
 const PARSE_SYSTEM = [
@@ -70,22 +70,6 @@ module.exports = async (req, res) => {
   const mode = body.mode === 'assess' ? 'assess' : 'parse';
 
   try {
-    // ── ⓧ DIAGNOSTIC: list available xAI models (temporary) ──
-    if (body.mode === 'models') {
-      const r = await fetch('https://api.x.ai/v1/models', {
-        headers: { 'Authorization': 'Bearer ' + process.env.XAI_API_KEY }
-      });
-      const j = await r.json();
-      const list = (j.data || []).map(m => ({
-        id: m.id,
-        img: (m.prompt_image_token_price || 0) > 0,
-        in: m.prompt_text_token_price,
-        out: m.completion_text_token_price
-      }));
-      res.status(200).json({ status: r.status, models: list });
-      return;
-    }
-
     // ── ① PARSE: image -> ingredient JSON (verifiable) ──
     if (mode === 'parse') {
       const image = body.image;
@@ -140,6 +124,6 @@ module.exports = async (req, res) => {
     res.status(200).json({ interactions });
 
   } catch (e) {
-    res.status(502).json({ error: 'upstream', detail: e.message, upstream: e.detail || null });
+    res.status(502).json({ error: 'upstream', detail: e.message });
   }
 };
