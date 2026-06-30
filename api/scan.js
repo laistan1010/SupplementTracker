@@ -75,8 +75,14 @@ module.exports = async (req, res) => {
       const r = await fetch('https://api.x.ai/v1/models', {
         headers: { 'Authorization': 'Bearer ' + process.env.XAI_API_KEY }
       });
-      const txt = await r.text();
-      res.status(200).json({ status: r.status, body: txt.slice(0, 2000) });
+      const j = await r.json();
+      const list = (j.data || []).map(m => ({
+        id: m.id,
+        img: (m.prompt_image_token_price || 0) > 0,
+        in: m.prompt_text_token_price,
+        out: m.completion_text_token_price
+      }));
+      res.status(200).json({ status: r.status, models: list });
       return;
     }
 
