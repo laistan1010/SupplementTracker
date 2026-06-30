@@ -721,7 +721,7 @@ var SUPP_DB = [
 
   {
     "name": "BCAAs",
-    "aliases": ["Branched-Chain Amino Acids", "Leucine", "Isoleucine", "Valine", "BCAA"],
+    "aliases": ["Branched-Chain Amino Acids", "BCAA"],
     "category": "Gym — Amino Acids",
     "emoji": "🔬",
     "color": "#ec4899",
