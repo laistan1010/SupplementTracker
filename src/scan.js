@@ -182,9 +182,12 @@ function scanRenderReview() {
   _scanShell(
     `<div class="rm-header">
        <span class="rm-slot-emoji">📋</span>
-       <div>
-         <div class="rm-title">${_esc(_scan.productName) || _sl('核對成分', 'Check the ingredients')}</div>
-         <div class="rm-subtitle">${_sl('AI 已填,核對 / 改 / 刪,啱就入庫', 'AI filled these in — check, edit, remove, then save')}</div>
+       <div style="flex:1;min-width:0">
+         <input id="scanProdName" value="${_esc(_scan.productName)}"
+           placeholder="${_sl('改個產品名(例如 D3+K2)', 'Name this product (e.g. D3+K2)')}"
+           oninput="_scan.productName=this.value" aria-label="product name"
+           style="font-size:16px;font-weight:700;color:var(--text);border:none;border-bottom:1px dashed var(--border);background:transparent;width:100%;padding:1px 0;outline:none">
+         <div class="rm-subtitle" style="margin-top:4px">${_sl('AI 已填,改名 / 核對 / 改 / 刪,啱就入庫', 'AI filled these in — name it, check, edit, remove, then save')}</div>
        </div>
      </div>
      <div class="rm-list" style="max-height:46vh">${rows}</div>
