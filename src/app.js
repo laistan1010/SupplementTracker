@@ -114,6 +114,13 @@ function renameSavedProduct(id) {
   save();
   render();
 }
+
+// Open the product detail (per-ingredient absorption/timing + conflicts) in the scan modal shell.
+function openProductDetail(id) {
+  const p = S.products.find(x => x.id === id);
+  if (!p) return;
+  _scanShell(renderProductDetail(p));
+}
 // ── DELETE WITH 5-SECOND UNDO ────────────────────────
 let _undo = null; // { item, idx, timer, el }
 

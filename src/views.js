@@ -240,7 +240,7 @@ function renderMyProducts() {
         return `
           <div class="sup-card" style="margin-bottom:10px">
             <div style="display:flex;align-items:flex-start;gap:10px">
-              <div style="flex:1;min-width:0">
+              <div style="flex:1;min-width:0;cursor:pointer" onclick="openProductDetail('${p.id}')">
                 <div class="sn">${_esc(p.name)}</div>
                 <div class="sc">${ings.length} ${t('product_ings_unit')}</div>
                 <div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.5">${_esc(summary)}</div>
@@ -250,9 +250,98 @@ function renderMyProducts() {
                 <button class="del-btn" onclick="delSavedProduct('${p.id}')" title="${t('btn_remove')}">×</button>
               </div>
             </div>
-            <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" onclick="logSavedProduct('${p.id}')">${t('btn_log_all')}</button>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="btn btn-outline btn-sm" style="flex:1" onclick="openProductDetail('${p.id}')">${t('btn_details')}</button>
+              <button class="btn btn-primary btn-sm" style="flex:1" onclick="logSavedProduct('${p.id}')">${t('btn_log_all')}</button>
+            </div>
           </div>`;
       }).join('')}
+    </div>`;
+}
+
+// Product detail (rendered in the scan modal shell): per-ingredient absorption/timing card,
+// cross-ingredient + medication conflict warnings, and a best-timing rollup. Curated ingredients
+// show real data; AI-suggested ones are flagged unverified. This is the scan payoff / selling point.
+function renderProductDetail(product) {
+  const ings = Array.isArray(product.ingredients) ? product.ingredients : [];
+
+  // Best-timing rollup — group curated ingredients by timing slot + collect "take with" macros.
+  const byTiming = {};
+  const macros = new Set();
+  ings.forEach(ing => {
+    const sup = DB.find(s => s.name === ing.name);
+    if (sup && !sup.aiSuggested && sup.absorption) {
+      (byTiming[sup.timing || 'anytime'] = byTiming[sup.timing || 'anytime'] || []).push(sup.name);
+      if (sup.absorption.macroLabel) macros.add(sup.absorption.macroLabel);
+    }
+  });
+  const slots = Object.keys(byTiming);
+  const rollup = slots.length ? `
+    <div style="background:#f1f6f2;border-radius:10px;padding:12px;margin-bottom:12px">
+      <div style="font-weight:700;font-size:13px;margin-bottom:7px">${_sl('⏰ 最佳服用時間', '⏰ Best timing')}</div>
+      ${slots.map(slot => `<div style="font-size:12.5px;margin-bottom:4px">${timingBadge(slot)} <span style="color:var(--text-muted)">${_esc(byTiming[slot].join(', '))}</span></div>`).join('')}
+      ${macros.size ? `<div style="font-size:12.5px;margin-top:6px">${_sl('🍽 配搭', '🍽 Take with')}: <strong>${[...macros].map(m => _esc(m.split(' ').slice(1).join(' '))).join(' · ')}</strong></div>` : ''}
+    </div>` : '';
+
+  // Conflicts within the product + vs the user's medications.
+  const conf = detectConflicts(ings).map(c => ({ a: c.a, b: c.b, sev: c.sev, note: c.note }))
+    .concat(detectMedConflicts(ings).map(c => ({ a: c.supplement, b: c.medication, sev: c.sev, note: c.note })));
+  conf.sort((x, y) => (x.sev === 'high' ? -1 : y.sev === 'high' ? 1 : 0));
+  const confHTML = conf.length ? `
+    <div style="margin-bottom:12px">
+      <div style="font-weight:700;font-size:13px;margin-bottom:6px">${_sl('⚠️ 衝突警告', '⚠️ Conflict warnings')}</div>
+      ${conf.map(c => `<div class="alert ${c.sev === 'high' ? 'alert-danger' : 'alert-warn'}" style="margin-bottom:6px"><div class="at"><strong>${_esc(c.a)} × ${_esc(c.b)}</strong><p>${_esc(c.note)}</p></div></div>`).join('')}
+    </div>`
+    : `<div style="font-size:12.5px;color:var(--success);margin-bottom:12px">${_sl('未見明顯衝突 ✓', 'No notable conflicts ✓')}</div>`;
+
+  // Per-ingredient cards — curated shows real absorption/timing, AI-suggested is flagged.
+  const cards = ings.map(ing => {
+    const sup = DB.find(s => s.name === ing.name);
+    const curated = sup && !sup.aiSuggested && sup.absorption;
+    const dose = ing.dose ? `${_esc(ing.dose)} ${_esc(ing.unit || '')}` : '';
+    if (curated) {
+      return `
+        <div class="sup-card" style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+            <strong style="font-size:14px">${_esc(sup.name)}</strong>
+            <span style="font-size:12px;color:var(--text-muted);white-space:nowrap">${dose}</span>
+          </div>
+          <div class="badges-row" style="margin:7px 0">
+            ${timingBadge(sup.timing)}
+            <span class="badge ${macroBadgeCls(sup.absorption.macro)}">${_esc(sup.absorption.macroLabel.split(' ').slice(1).join(' '))}</span>
+            ${scorePill(sup.absorption.scoreLabel, sup.absorption.score)}
+          </div>
+          <div style="font-size:12px;color:var(--primary)">${_esc(sup.absorption.tip)}</div>
+        </div>`;
+    }
+    return `
+      <div class="sup-card" style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+          <strong style="font-size:14px">${_esc(ing.name)}</strong>
+          <span style="font-size:12px;color:var(--text-muted);white-space:nowrap">${dose}</span>
+        </div>
+        <div style="margin-top:5px"><span class="badge badge-ai">~ ${_sl('AI 推測 · 未核實', 'AI-suggested · unverified')}</span></div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="rm-header">
+      <span class="rm-slot-emoji">📋</span>
+      <div>
+        <div class="rm-title">${_esc(product.name)}</div>
+        <div class="rm-subtitle">${ings.length} ${_sl('種成分 · 吸收 + 時間 + 衝突', 'ingredients · absorption + timing + conflicts')}</div>
+      </div>
+    </div>
+    <div class="rm-list" style="max-height:62vh;overflow-y:auto">
+      ${rollup}
+      ${confHTML}
+      <div style="font-weight:700;font-size:13px;margin:6px 0 7px">${_sl('逐隻成分', 'Per ingredient')}</div>
+      ${cards}
+      <div style="font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.5">${_sl('🟡 AI 推測 = 唔喺已核實資料庫,僅供參考,非醫療建議。', '🟡 AI-suggested = not in the verified database, for reference only, not medical advice.')}</div>
+    </div>
+    <div class="rm-actions" style="margin-top:10px">
+      <button class="btn btn-outline" style="flex:1" onclick="scanClose()">${_sl('關閉', 'Close')}</button>
+      <button class="btn btn-primary" style="flex:1" onclick="logSavedProduct('${product.id}');scanClose()">${t('btn_log_all')}</button>
     </div>`;
 }
 
