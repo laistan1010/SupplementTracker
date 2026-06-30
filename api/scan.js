@@ -70,6 +70,16 @@ module.exports = async (req, res) => {
   const mode = body.mode === 'assess' ? 'assess' : 'parse';
 
   try {
+    // ── ⓧ DIAGNOSTIC: list available xAI models (temporary) ──
+    if (body.mode === 'models') {
+      const r = await fetch('https://api.x.ai/v1/models', {
+        headers: { 'Authorization': 'Bearer ' + process.env.XAI_API_KEY }
+      });
+      const txt = await r.text();
+      res.status(200).json({ status: r.status, body: txt.slice(0, 2000) });
+      return;
+    }
+
     // ── ① PARSE: image -> ingredient JSON (verifiable) ──
     if (mode === 'parse') {
       const image = body.image;
