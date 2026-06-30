@@ -83,6 +83,25 @@ function logProduct(product) {
     medConflicts: detectMedConflicts(S.loggedToday)    // vs S.profile.medications (e.g. K2 x Warfarin)
   };
 }
+
+// Re-log a previously scanned product (from the "My Products" list in Search) without re-scanning.
+// logProduct dedupes the product by id, so this only appends today's per-ingredient entries.
+function logSavedProduct(id) {
+  const p = S.products.find(x => x.id === id);
+  if (!p) return;
+  const read = logProduct(p);
+  render();
+  toast(t('product_logged').replace('{name}', p.name).replace('{n}', read ? read.entries.length : 0));
+}
+
+function delSavedProduct(id) {
+  const p = S.products.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm(t('confirm_del_product').replace('{name}', p.name))) return;
+  S.products = S.products.filter(x => x.id !== id);
+  save();
+  render();
+}
 // ── DELETE WITH 5-SECOND UNDO ────────────────────────
 let _undo = null; // { item, idx, timer, el }
 

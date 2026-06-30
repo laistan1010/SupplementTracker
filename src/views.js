@@ -225,12 +225,41 @@ function renderSearchResults(q) {
 }
 
 // Renders the search PAGE shell (input stays alive; only #sr gets re-rendered)
+// "My Products" — products scanned earlier (S.products) shown at the top of Search so the user
+// can re-log the whole thing in one tap instead of re-scanning. Names reflect any edits made on
+// the review screen before Confirm, so a corrected product stays corrected on every reuse.
+function renderMyProducts() {
+  if (!S.products || !S.products.length) return '';
+  return `
+    <div style="margin-bottom:22px">
+      <h3 style="font-size:15.5px;font-weight:700;margin-bottom:3px">${t('my_products')}</h3>
+      <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">${t('my_products_desc')}</p>
+      ${S.products.map(p=>{
+        const ings = Array.isArray(p.ingredients) ? p.ingredients : [];
+        const summary = ings.map(i=>i.name).join(', ');
+        return `
+          <div class="sup-card" style="margin-bottom:10px">
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <div style="flex:1;min-width:0">
+                <div class="sn">${_esc(p.name)}</div>
+                <div class="sc">${ings.length} ${t('product_ings_unit')}</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.5">${_esc(summary)}</div>
+              </div>
+              <button class="del-btn" onclick="delSavedProduct('${p.id}')" title="${t('btn_remove')}">×</button>
+            </div>
+            <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px" onclick="logSavedProduct('${p.id}')">${t('btn_log_all')}</button>
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+
 function vSearch() {
   return `
     <div class="page-header">
       <h2>${t('search_heading')}</h2>
       <p>${t('search_desc').replace('{n}',DB.length)}</p>
     </div>
+    ${renderMyProducts()}
     <div class="search-wrap">
       <span class="search-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b0a89e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
       <input id="mainSearch" type="text"

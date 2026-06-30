@@ -111,12 +111,40 @@ function expandProductToEntries(product) {
   }));
 }
 
+// A scanned / AI-suggested ingredient is persisted as a bare { name, custom, aiSuggested, ... }.
+// Every view that iterates DB (search, dashboard, log) assumes the full builtin-supp shape
+// (category, timing, absorption{...}, color) — a bare object makes them throw on absorption.*,
+// which is what silently kills the Search tab after a scan. Fill safe defaults so a custom supp
+// can never crash a view. Honest, not faked: absorption is flagged unverified, not given a score.
+function normalizeCustomSupp(cs) {
+  return {
+    category: 'Scanned · AI-suggested',
+    emoji: '🔬',
+    color: '#9ca3af',
+    timing: 'anytime',
+    timingNote: '',
+    aliases: [],
+    conflicts: [],
+    healthWarnings: [],
+    ...cs,                          // caller-provided fields win over the defaults above
+    aiSuggested: true,
+    absorption: cs.absorption || {
+      macro: 'food', macroLabel: '🍽 With Food',
+      score: 0, scoreLabel: 'N/A',
+      tip: 'AI-suggested ingredient · absorption not verified. For reference only.'
+    }
+  };
+}
+
 // Merge custom / AI-suggested ingredients into the runtime DB. Builtin wins on name collision.
 // Idempotent: re-running with the same custom list adds nothing (names already present).
+// Each addition is normalized to the full supp shape so it renders safely everywhere.
 function mergeCustomSupps(baseDB, custom) {
   if (!Array.isArray(custom) || !custom.length) return baseDB;
   const have = new Set(baseDB.map(s => s.name.toLowerCase()));
-  const additions = custom.filter(c => c && c.name && !have.has(c.name.toLowerCase()));
+  const additions = custom
+    .filter(c => c && c.name && !have.has(c.name.toLowerCase()))
+    .map(normalizeCustomSupp);
   return additions.length ? [...baseDB, ...additions] : baseDB;
 }
 
