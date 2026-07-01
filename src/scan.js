@@ -11,15 +11,19 @@ let _scan = { rows: [], productName: '', interactions: [] };
 
 function _sl(zh, en) { return (typeof LANG !== 'undefined' && LANG === 'zh') ? zh : en; }
 
-// Same DB-match predicate as dsldMatchIngredients (app.js): name/alias substring match.
-// Unlike that function we KEEP non-matches (decision A: never silently drop an ingredient).
+// Match a scanned ingredient name to a curated DB supp. WHOLE-WORD match, not raw substring:
+// a naive `includes` let short aliases hijack unrelated names (e.g. Selenium's "Se" alias matched
+// "cumin SEed oil", BCAAs' aminos matched L-Leucine). We KEEP non-matches (never drop an ingredient).
 function _scanMatchSupp(name) {
   const n = (name || '').toLowerCase();
   if (!n) return null;
-  return DB.find(s =>
-    n.includes(s.name.toLowerCase()) ||
-    (s.aliases || []).some(a => n.includes(a.toLowerCase()))
-  ) || null;
+  const hit = term => {
+    const t = (term || '').toLowerCase().trim();
+    if (t.length < 2) return false;
+    const esc = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('(^|[^a-z0-9])' + esc + '([^a-z0-9]|$)').test(n);   // t appears as a whole token
+  };
+  return DB.find(s => hit(s.name) || (s.aliases || []).some(hit)) || null;
 }
 
 function _scanModal() { return document.getElementById('scanModalRoot'); }
@@ -191,11 +195,11 @@ async function scanParse(dataUrl) {
     const dsld = await dsldLookupForScan(_scan.productName);
     if (dsld && dsld.ingredients.length) {
       _scan.source = 'dsld';
-      _scan.rows = dsld.ingredients.map(ing => {
-        const supp = _scanMatchSupp(ing.name);
-        const curated = !!(supp && !supp.aiSuggested);
-        return { name: curated ? supp.name : ing.name, dose: ing.dose, unit: ing.unit || 'mg', verified: curated, dsld: true };
-      });
+      // DSLD names are authoritative — keep them verbatim. Never let the fuzzy curated matcher
+      // rename them (that's how "Black Cumin Seed Oil" became "Selenium" via the short "Se" alias).
+      _scan.rows = dsld.ingredients.map(ing => (
+        { name: ing.name, dose: ing.dose, unit: ing.unit || 'mg', verified: false, dsld: true }
+      ));
       scanRenderReview();
       _scanAssess();
       return;
