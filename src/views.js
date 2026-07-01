@@ -211,7 +211,7 @@ function renderStacks() {
 function renderSearchResults(q) {
   const lq = (q||'').toLowerCase();
   const userTerms = [...(S.profile.conditions||[]),...(S.profile.medications||[])].map(x=>x.toLowerCase());
-  const catalog = DB.filter(s=>!s.aiSuggested);   // Search = curated catalogue only; scanned AI customs are match-only, not browsable
+  const catalog = DB.filter(s=>!s.aiSuggested && !s.dsld);   // Search = curated catalogue only; scanned (AI or DSLD) customs are match-only, not browsable
   const list = lq
     ? catalog.filter(s=>s.name.toLowerCase().includes(lq)||s.category.toLowerCase().includes(lq)||(s.aliases||[]).some(a=>a.toLowerCase().includes(lq)))
     : catalog;
@@ -325,7 +325,7 @@ function renderProductDetail(product) {
   // Per-ingredient cards — curated shows real absorption/timing, AI-suggested is flagged.
   const cards = ings.map(ing => {
     const sup = DB.find(s => s.name === ing.name);
-    const curated = sup && !sup.aiSuggested && sup.absorption;
+    const curated = sup && !sup.custom && sup.absorption;   // rich card only for builtin curated supps
     const dose = ing.dose ? `${_esc(ing.dose)} ${_esc(ing.unit || '')}` : '';
     if (curated) {
       return `
@@ -348,7 +348,9 @@ function renderProductDetail(product) {
           <strong style="font-size:14px">${_esc(ing.name)}</strong>
           <span style="font-size:12px;color:var(--text-muted);white-space:nowrap">${dose}</span>
         </div>
-        <div style="margin-top:5px"><span class="badge badge-ai">~ ${_sl('AI 推測 · 未核實', 'AI-suggested · unverified')}</span></div>
+        <div style="margin-top:5px">${(sup && sup.dsld)
+          ? `<span class="badge badge-verified">✓ NIH DSLD</span>`
+          : `<span class="badge badge-ai">~ ${_sl('AI 推測 · 未核實', 'AI-suggested · unverified')}</span>`}</div>
       </div>`;
   }).join('');
 
@@ -381,7 +383,7 @@ function vSearch() {
   return `
     <div class="page-header">
       <h2>${t('search_heading')}</h2>
-      <p>${t('search_desc').replace('{n}',DB.filter(s=>!s.aiSuggested).length)}</p>
+      <p>${t('search_desc').replace('{n}',DB.filter(s=>!s.aiSuggested && !s.dsld).length)}</p>
     </div>
     <div class="search-wrap">
       <span class="search-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b0a89e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>

@@ -117,21 +117,23 @@ function expandProductToEntries(product) {
 // which is what silently kills the Search tab after a scan. Fill safe defaults so a custom supp
 // can never crash a view. Honest, not faked: absorption is flagged unverified, not given a score.
 function normalizeCustomSupp(cs) {
+  const ai = cs.aiSuggested !== false;    // AI-suggested unless explicitly false (e.g. DSLD-sourced)
   return {
-    category: 'Scanned · AI-suggested',
+    category: cs.dsld ? 'Scanned · NIH DSLD' : 'Scanned · AI-suggested',
     emoji: '🔬',
-    color: '#9ca3af',
+    color: cs.dsld ? '#588768' : '#9ca3af',
     timing: 'anytime',
     timingNote: '',
     aliases: [],
     conflicts: [],
     healthWarnings: [],
     ...cs,                          // caller-provided fields win over the defaults above
-    aiSuggested: true,
+    aiSuggested: ai,
     absorption: cs.absorption || {
       macro: 'food', macroLabel: '🍽 With Food',
       score: 0, scoreLabel: 'N/A',
-      tip: 'AI-suggested ingredient · absorption not verified. For reference only.'
+      tip: cs.dsld ? 'From NIH DSLD · absorption data not in our database.'
+                   : 'AI-suggested ingredient · absorption not verified. For reference only.'
     }
   };
 }

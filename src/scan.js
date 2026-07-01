@@ -121,6 +121,41 @@ function scanError(msg) {
   );
 }
 
+// Generic nutrition-facts rows + units we don't treat as supplement actives.
+const _DSLD_SKIP = new Set(['calories','total fat','saturated fat','trans fat','polyunsaturated fat',
+  'monounsaturated fat','cholesterol','sodium','total carbohydrate','dietary fiber','soluble fiber',
+  'insoluble fiber','total sugars','added sugars','protein']);
+function _dsldUnit(u) {
+  const m = { 'gram(s)':'g','grams':'g','milligram(s)':'mg','milligrams':'mg','microgram(s)':'mcg',
+    'micrograms':'mcg','international unit(s)':'IU','iu':'IU' };
+  return m[(u||'').toLowerCase().trim()] || (u||'');
+}
+
+// Look up the scanned product in NIH DSLD by its (vision-read) NAME — text search, not barcode,
+// so it isn't limited by UPC coverage (the reason barcode lookups were unreliable). Returns the
+// authoritative ingredient list when there's a confident match, else null (caller uses vision).
+async function dsldLookupForScan(name) {
+  const q = (name || '').trim();
+  if (q.length < 4) return null;
+  try {
+    const sr = await fetch(`https://api.ods.od.nih.gov/dsld/v9/search-filter?q=${encodeURIComponent(q)}&size=3`);
+    if (!sr.ok) return null;
+    const hits = ((await sr.json()) || {}).hits || [];
+    if (!hits.length || (hits[0]._score || 0) < 25) return null;   // weak/no match -> fall back to vision
+    const lr = await fetch(`https://api.ods.od.nih.gov/dsld/v9/label/${hits[0]._id}`);
+    if (!lr.ok) return null;
+    const label = await lr.json();
+    const rows = (label.ingredientRows || [])
+      .filter(r => r && r.name && r.category !== 'other' && !_DSLD_SKIP.has(String(r.name).toLowerCase().trim()))
+      .map(r => {
+        const qy = (r.quantity && r.quantity[0]) || {};
+        return { name: String(r.name).trim(), dose: qy.quantity != null ? String(qy.quantity) : '', unit: _dsldUnit(qy.unit) };
+      })
+      .filter(r => r.name);
+    return rows.length ? { name: label.fullName || q, brand: label.brandName || '', ingredients: rows } : null;
+  } catch (_) { return null; }
+}
+
 // ── parse via /api/scan ──
 async function scanParse(dataUrl) {
   _scanLoading(_sl('讀緊標籤…通常幾秒', 'Reading the label… usually a few seconds'));
@@ -147,11 +182,30 @@ async function scanParse(dataUrl) {
   if (!ings.length) return scanError(_sl('讀唔到任何成分,影清楚啲', 'No ingredients found, re-shoot more clearly'));
 
   _scan.productName = data.productName || '';
+
+  // Layered pipeline: vision reliably reads the product NAME but can hallucinate the facts panel.
+  // So when NIH DSLD has the product (text search), take its authoritative ingredient list; the
+  // vision ingredients are only the fallback for products DSLD doesn't have.
+  if (_scan.productName) {
+    _scanLoading(_sl('喺 NIH DSLD 核對緊…', 'Checking the NIH DSLD database…'));
+    const dsld = await dsldLookupForScan(_scan.productName);
+    if (dsld && dsld.ingredients.length) {
+      _scan.source = 'dsld';
+      _scan.rows = dsld.ingredients.map(ing => {
+        const supp = _scanMatchSupp(ing.name);
+        const curated = !!(supp && !supp.aiSuggested);
+        return { name: curated ? supp.name : ing.name, dose: ing.dose, unit: ing.unit || 'mg', verified: curated, dsld: true };
+      });
+      scanRenderReview();
+      _scanAssess();
+      return;
+    }
+  }
+
+  // ── fallback: trust the vision ingredients (curated match -> Verified, else AI-guess) ──
+  _scan.source = 'vision';
   _scan.rows = ings.map(ing => {
     const supp = _scanMatchSupp(ing.name);
-    // Only a curated builtin entry counts as "Verified". A match against a previously-saved
-    // AI-suggested custom supp (aiSuggested) must NOT show a green check — it was never verified,
-    // and it shouldn't override the freshly-scanned name either.
     const curated = !!(supp && !supp.aiSuggested);
     return {
       name: curated ? supp.name : ing.name,      // canonical name only for curated matches
@@ -167,9 +221,11 @@ async function scanParse(dataUrl) {
 // ── STATE: review (editable, prefilled) ──
 function scanRenderReview() {
   const rows = _scan.rows.map((row, i) => {
-    const badge = row.verified
-      ? `<span class="badge badge-verified">✓ ${_sl('已核實', 'Verified')}</span>`
-      : `<span class="badge badge-ai">~ ${_sl('AI 推測', 'AI-guess')}</span>`;
+    const badge = row.dsld
+      ? `<span class="badge badge-verified">✓ NIH DSLD</span>`
+      : row.verified
+        ? `<span class="badge badge-verified">✓ ${_sl('已核實', 'Verified')}</span>`
+        : `<span class="badge badge-ai">~ ${_sl('AI 推測', 'AI-guess')}</span>`;
     return `<div class="scan-row">
         <input class="scan-in scan-in-name" id="scan-name-${i}" value="${_esc(row.name)}" aria-label="ingredient name">
         <input class="scan-in scan-in-dose" id="scan-dose-${i}" value="${_esc(row.dose)}" inputmode="decimal" aria-label="dose">
@@ -187,9 +243,12 @@ function scanRenderReview() {
            placeholder="${_sl('改個產品名(例如 D3+K2)', 'Name this product (e.g. D3+K2)')}"
            oninput="_scan.productName=this.value" aria-label="product name"
            style="font-size:16px;font-weight:700;color:var(--text);border:none;border-bottom:1px dashed var(--border);background:transparent;width:100%;padding:1px 0;outline:none">
-         <div class="rm-subtitle" style="margin-top:4px">${_sl('AI 已填,改名 / 核對 / 改 / 刪,啱就入庫', 'AI filled these in — name it, check, edit, remove, then save')}</div>
+         <div class="rm-subtitle" style="margin-top:4px">${_scan.source==='dsld'
+            ? _sl('✅ 喺 NIH DSLD 揾到 — 官方成分,改名 / 核對就入庫', '✅ Matched NIH DSLD — official ingredients, name it & save')
+            : _sl('AI 已填,改名 / 核對 / 改 / 刪,啱就入庫', 'AI filled these in — name it, check, edit, remove, then save')}</div>
        </div>
      </div>
+     ${_scan.source==='dsld' ? `<div style="background:#eef6f0;border:1px solid #cfe6d6;border-radius:8px;padding:8px 11px;margin-bottom:10px;font-size:12px;color:#2d6a4f">${_sl('成分嚟自美國 NIH 膳食補充劑標籤資料庫 (DSLD),非 AI 估算。', 'Ingredients are from the U.S. NIH Dietary Supplement Label Database (DSLD), not an AI guess.')}</div>` : ''}
      <div class="rm-list" style="max-height:46vh">${rows}</div>
      <button class="btn btn-outline" style="width:100%;margin-bottom:10px" onclick="scanAddRow()">+ ${_sl('加一行', 'Add a row')}</button>
      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5">
@@ -209,7 +268,8 @@ function _readRows() {
       name: g(`scan-name-${i}`) || row.name,
       dose: g(`scan-dose-${i}`),
       unit: g(`scan-unit-${i}`) || 'mg',
-      verified: row.verified
+      verified: row.verified,
+      dsld: !!row.dsld
     };
   }).filter(r => r.name);
 }
@@ -223,7 +283,11 @@ function scanConfirm() {
   if (!rows.length) return scanError(_sl('冇成分可入庫', 'No ingredients to save'));
 
   const customSupps = rows.filter(r => !r.verified).map(r => ({
-    name: r.name, custom: true, aiSuggested: true, aiNote: _sl('AI 推測·未核實', 'AI-suggested · unverified'), conflicts: []
+    name: r.name, custom: true,
+    aiSuggested: !r.dsld,            // DSLD-sourced ingredients are authoritative, not AI guesses
+    dsld: !!r.dsld,
+    aiNote: r.dsld ? 'NIH DSLD' : _sl('AI 推測·未核實', 'AI-suggested · unverified'),
+    conflicts: []
   }));
   const product = {
     id: 'prod-' + Date.now(),
