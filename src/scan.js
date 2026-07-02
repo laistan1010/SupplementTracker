@@ -56,7 +56,7 @@ function scanOpen() {
        <span class="rm-slot-emoji">📷</span>
        <div>
          <div class="rm-title">${_sl('影標籤', 'Scan a label')}</div>
-         <div class="rm-subtitle">${_sl('影 Supplement Facts 嗰一面,夠光夠清', 'Shoot the Supplement Facts panel, well-lit and sharp')}</div>
+         <div class="rm-subtitle">${_sl('影樽嘅正面(產品名大字嗰面)最準 — 我哋會用個名查 NIH 官方資料庫', 'Shoot the FRONT of the bottle (big product name) — we look it up in the NIH database')}</div>
        </div>
      </div>
      <label class="btn btn-primary" style="width:100%;cursor:pointer;text-align:center">
@@ -135,18 +135,29 @@ function _dsldUnit(u) {
   return m[(u||'').toLowerCase().trim()] || (u||'');
 }
 
-// Look up the scanned product in NIH DSLD by its (vision-read) NAME — text search, not barcode,
-// so it isn't limited by UPC coverage (the reason barcode lookups were unreliable). Returns the
-// authoritative ingredient list when there's a confident match, else null (caller uses vision).
-async function dsldLookupForScan(name) {
+// Search NIH DSLD by the vision-read product NAME (text search, not barcode — UPC coverage is
+// poor). Returns up to 3 candidates for the USER to pick from. We never auto-take the top hit:
+// scores proved unsafe (a wrong product at score 76 wearing the NIH badge is worse than a
+// visible AI guess).
+async function dsldSearchCandidates(name) {
   const q = (name || '').trim();
-  if (q.length < 4) return null;
+  if (q.length < 4) return [];
   try {
-    const sr = await fetch(`https://api.ods.od.nih.gov/dsld/v9/search-filter?q=${encodeURIComponent(q)}&size=3`);
-    if (!sr.ok) return null;
+    const sr = await fetch(`https://api.ods.od.nih.gov/dsld/v9/search-filter?q=${encodeURIComponent(q)}&size=4`);
+    if (!sr.ok) return [];
     const hits = ((await sr.json()) || {}).hits || [];
-    if (!hits.length || (hits[0]._score || 0) < 25) return null;   // weak/no match -> fall back to vision
-    const lr = await fetch(`https://api.ods.od.nih.gov/dsld/v9/label/${hits[0]._id}`);
+    return hits
+      .filter(h => (h._score || 0) >= 20)          // drop pure noise, keep plausible candidates
+      .slice(0, 3)
+      .map(h => ({ id: String(h._id), name: (h._source && h._source.fullName) || '', brand: (h._source && h._source.brandName) || '' }))
+      .filter(c => c.name);
+  } catch (_) { return []; }
+}
+
+// Fetch one DSLD label's authoritative ingredient rows (actives only, normalised units).
+async function dsldFetchIngredients(labelId) {
+  try {
+    const lr = await fetch(`https://api.ods.od.nih.gov/dsld/v9/label/${labelId}`);
     if (!lr.ok) return null;
     const label = await lr.json();
     const rows = (label.ingredientRows || [])
@@ -156,7 +167,7 @@ async function dsldLookupForScan(name) {
         return { name: String(r.name).trim(), dose: qy.quantity != null ? String(qy.quantity) : '', unit: _dsldUnit(qy.unit) };
       })
       .filter(r => r.name);
-    return rows.length ? { name: label.fullName || q, brand: label.brandName || '', ingredients: rows } : null;
+    return rows.length ? { name: label.fullName || '', brand: label.brandName || '', ingredients: rows } : null;
   } catch (_) { return null; }
 }
 
@@ -187,30 +198,11 @@ async function scanParse(dataUrl) {
 
   _scan.productName = data.productName || '';
 
-  // Layered pipeline: vision reliably reads the product NAME but can hallucinate the facts panel.
-  // So when NIH DSLD has the product (text search), take its authoritative ingredient list; the
-  // vision ingredients are only the fallback for products DSLD doesn't have.
-  if (_scan.productName) {
-    _scanLoading(_sl('喺 NIH DSLD 核對緊…', 'Checking the NIH DSLD database…'));
-    const dsld = await dsldLookupForScan(_scan.productName);
-    if (dsld && dsld.ingredients.length) {
-      _scan.source = 'dsld';
-      // DSLD names are authoritative — keep them verbatim. Never let the fuzzy curated matcher
-      // rename them (that's how "Black Cumin Seed Oil" became "Selenium" via the short "Se" alias).
-      _scan.rows = dsld.ingredients.map(ing => (
-        { name: ing.name, dose: ing.dose, unit: ing.unit || 'mg', verified: false, dsld: true }
-      ));
-      scanRenderReview();
-      _scanAssess();
-      return;
-    }
-  }
-
-  // ── fallback: trust the vision ingredients (curated match -> Verified, else AI-guess) ──
-  _scan.source = 'vision';
-  _scan.rows = ings.map(ing => {
+  // Vision rows are built up-front: they're the fallback and the "not listed" picker option.
+  // Curated check is !supp.custom (a DSLD/AI custom from an earlier scan must not badge "Verified").
+  _scan.visionRows = ings.map(ing => {
     const supp = _scanMatchSupp(ing.name);
-    const curated = !!(supp && !supp.aiSuggested);
+    const curated = !!(supp && !supp.custom);
     return {
       name: curated ? supp.name : ing.name,      // canonical name only for curated matches
       dose: ing.dose != null ? String(ing.dose) : '',
@@ -218,6 +210,64 @@ async function scanParse(dataUrl) {
       verified: curated
     };
   });
+
+  // Layered pipeline: vision reliably reads the product NAME but hallucinates the facts panel.
+  // DSLD candidates are shown for the USER to pick — never auto-taken (wrong product wearing
+  // the NIH badge is worse than a visible AI guess).
+  if (_scan.productName) {
+    _scanLoading(_sl('搵緊 NIH DSLD 資料庫…', 'Searching the NIH DSLD database…'));
+    const cands = await dsldSearchCandidates(_scan.productName);
+    if (cands.length) return scanRenderDsldPicker(cands);
+  }
+  scanUseVision();
+}
+
+// ── STATE: DSLD candidate picker ──
+function scanRenderDsldPicker(cands) {
+  _scanShell(
+    `<div class="rm-header">
+       <span class="rm-slot-emoji">🔎</span>
+       <div>
+         <div class="rm-title">${_sl('NIH 資料庫搵到相似產品', 'Possible matches in the NIH database')}</div>
+         <div class="rm-subtitle">${_sl('揀啱你嗰支就攞官方成分(零AI猜測)', 'Pick yours to use official ingredients (no AI guessing)')}</div>
+       </div>
+     </div>
+     <div class="rm-list" style="max-height:46vh">
+       ${cands.map(c => `
+         <button class="btn btn-outline" style="width:100%;margin-bottom:8px;text-align:left;display:block" onclick="scanPickDsld('${c.id}')">
+           <div style="font-weight:600;font-size:13.5px">${_esc(c.name)}</div>
+           <div style="font-size:12px;color:var(--text-muted)">${_esc(c.brand)}</div>
+         </button>`).join('')}
+     </div>
+     <button class="btn btn-primary" style="width:100%;margin-bottom:8px" onclick="scanUseVision()">${_sl('唔喺清單 — 用 AI 讀到嘅成分', 'Not listed — use the AI reading')}</button>
+     <div class="rm-actions">
+       <button class="btn btn-outline" style="flex:1" onclick="scanClose()">${_sl('取消', 'Cancel')}</button>
+     </div>`
+  );
+}
+
+// User picked a DSLD product: fetch its authoritative rows. Each name is mapped onto the curated
+// DB with the WHOLE-WORD matcher so the conflict + absorption engines fire (they key on canonical
+// names). Safe now that short aliases can't hijack; unmatched names stay verbatim.
+async function scanPickDsld(labelId) {
+  _scanLoading(_sl('攞緊官方成分…', 'Fetching official ingredients…'));
+  const dsld = await dsldFetchIngredients(labelId);
+  if (!dsld || !dsld.ingredients.length) return scanUseVision();
+  _scan.source = 'dsld';
+  _scan.rows = dsld.ingredients.map(ing => {
+    const supp = _scanMatchSupp(ing.name);
+    const curated = !!(supp && !supp.custom);
+    return { name: curated ? supp.name : ing.name, dose: ing.dose, unit: ing.unit || 'mg', verified: curated, dsld: true };
+  });
+  scanRenderReview();
+  _scanAssess();
+}
+
+// Fallback / "not listed": trust the vision ingredients (curated match -> Verified, else AI-guess).
+function scanUseVision() {
+  _scan.source = 'vision';
+  _scan.rows = _scan.visionRows || [];
+  if (!_scan.rows.length) return scanError(_sl('讀唔到任何成分,影清楚啲', 'No ingredients found, re-shoot more clearly'));
   scanRenderReview();
   _scanAssess();   // best-effort AI interaction layer for the read (fires in background)
 }
