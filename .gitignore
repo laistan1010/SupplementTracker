@@ -11,3 +11,7 @@ node_modules/
 .DS_Store
 Thumbs.db
 .gstack/
+
+# golden-test photos stay local (personal photos, keep repo lean)
+tests/golden/photos/*
+!tests/golden/photos/.gitkeep

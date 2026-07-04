@@ -1,0 +1,24 @@
+{
+  "_comment": "Golden test set — keyed by photo filename in tests/golden/photos/. dose:null = don't check the dose. Add more bottles any time.",
+
+  "dl-phenylalanine.jpg": {
+    "product": "Phenylalanine",
+    "ingredients": [{ "name": "Phenylalanine", "dose": 500, "unit": "mg" }]
+  },
+  "alpha-gpc.jpg": {
+    "product": "Alpha GPC",
+    "ingredients": [{ "name": "Alpha", "dose": 600, "unit": "mg" }]
+  },
+  "biotin.jpg": {
+    "product": "Biotin",
+    "ingredients": [{ "name": "Biotin", "dose": 600, "unit": "mcg" }]
+  },
+  "l-citrulline.jpg": {
+    "product": "Citrulline",
+    "ingredients": [{ "name": "Citrulline", "dose": 1500, "unit": "mg" }]
+  },
+  "metamucil.jpg": {
+    "product": "Metamucil",
+    "ingredients": [{ "name": "Psyllium", "dose": null, "unit": "" }]
+  }
+}
