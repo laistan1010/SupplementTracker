@@ -329,7 +329,11 @@ function renderProductDetail(product) {
 
   // Per-ingredient cards — curated shows real absorption/timing, AI-suggested is flagged.
   const cards = ings.map(ing => {
-    const sup = DB.find(s => s.name === ing.name);
+    let sup = DB.find(s => s.name === ing.name);
+    if (!sup && typeof classifyIngredient === 'function') {
+      const k = classifyIngredient(ing.name);          // class-based fallback for non-DB ingredients
+      sup = { name: ing.name, custom: true, timing: k.timing, absorption: k.absorption };
+    }
     const ab = sup && sup.absorption;
     // Rich card whenever there's real guidance — curated (Verified) OR class-based (General).
     const hasAbs = ab && typeof ab.macro === 'string' && ab.scoreLabel !== 'N/A';
