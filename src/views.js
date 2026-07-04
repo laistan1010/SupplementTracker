@@ -79,6 +79,11 @@ function vDashboard() {
     </div>
 
     <div class="quick-actions">
+      <div class="qa-card" onclick="go('plan')" style="border:1.5px solid var(--primary)">
+        <div class="qa-icon" style="background:var(--primary-light)">🎯</div>
+        <div class="qa-title">${_sl('我嘅計劃', 'My Plan')}</div>
+        <div class="qa-desc">${_sl('幾時食咩、點搭配', 'What to take, when, and with what')}</div>
+      </div>
       <div class="qa-card" onclick="go('search')">
         <div class="qa-icon" style="background:var(--primary-light)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>

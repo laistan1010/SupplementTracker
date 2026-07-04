@@ -50,7 +50,11 @@ function scanClose() {
 }
 
 // ── STATE: capture ──
-function scanOpen() {
+// catalog=true (onboarding "scan your shelf"): confirming saves the product WITHOUT logging
+// today's intake, and offers "scan another" to loop through the whole shelf.
+let _scanCatalog = false;
+function scanOpen(catalog) {
+  _scanCatalog = !!catalog;
   _scanShell(
     `<div class="rm-header">
        <span class="rm-slot-emoji">📷</span>
@@ -80,10 +84,12 @@ function scanHandleFile(input) {
 }
 
 // Phone photos are multi-MB at full resolution, which pushes the vision call past the
-// function time limit (a label needs nowhere near that detail). Downscale to MAX_DIM on
-// the long edge and re-encode as JPEG; fall back to the original if anything fails.
+// function time limit. Downscale to MAX_DIM on the long edge and re-encode as JPEG; fall
+// back to the original if anything fails. 1600 (was 1280): a facts panel fills a fraction
+// of the frame, and at 1280 its small print cost OCR digits (1,000 read as 100) — still
+// only ~½ MB as JPEG 0.85, far under the /api/scan size cap.
 function _scanDownscale(dataUrl, cb) {
-  const MAX_DIM = 1280;
+  const MAX_DIM = 1600;
   const img = new Image();
   img.onload = () => {
     try {
@@ -143,31 +149,56 @@ async function dsldSearchCandidates(name) {
   const q = (name || '').trim();
   if (q.length < 4) return [];
   try {
-    const sr = await fetch(`https://api.ods.od.nih.gov/dsld/v9/search-filter?q=${encodeURIComponent(q)}&size=4`);
+    const sr = await fetch(`https://api.ods.od.nih.gov/dsld/v9/search-filter?q=${encodeURIComponent(q)}&size=10`);
     if (!sr.ok) return [];
     const hits = ((await sr.json()) || {}).hits || [];
-    return hits
-      .filter(h => (h._score || 0) >= 20)          // drop pure noise, keep plausible candidates
-      .slice(0, 3)
-      .map(h => ({ id: String(h._id), name: (h._source && h._source.fullName) || '', brand: (h._source && h._source.brandName) || '' }))
-      .filter(c => c.name);
+    // DSLD keeps every historical label revision as its own record (one product can appear
+    // 3-6x, most off-market — verified: "Ultimate Omega" top-6 were ALL discontinued). Collapse
+    // revisions per product, keeping the best one (on-market beats off-market, then newest):
+    // a 2013 revision has a different formulation, i.e. wrong doses wearing the NIH badge.
+    const byProduct = new Map();                    // insertion order preserves relevance ranking
+    for (const h of hits) {
+      if ((h._score || 0) < 20) continue;           // drop pure noise, keep plausible candidates
+      const s = h._source || {};
+      if (!s.fullName) continue;
+      const c = { id: String(h._id), name: s.fullName, brand: s.brandName || '',
+                  off: String(s.offMarket) === '1', year: String(s.entryDate || '').slice(0, 4) };
+      const k = (c.brand + '|' + c.name).toLowerCase();
+      const prev = byProduct.get(k);
+      if (!prev || (prev.off && !c.off) || (prev.off === c.off && c.year > prev.year)) byProduct.set(k, c);
+    }
+    return Array.from(byProduct.values()).slice(0, 3);
   } catch (_) { return []; }
 }
 
 // Fetch one DSLD label's authoritative ingredient rows (actives only, normalised units).
+// Includes nested sub-rows that carry their own printed amount (e.g. EPA/DHA under
+// "Total Omega-3 Fatty Acids") — without them a fish-oil scan logs only the blend total.
+// Also returns the label's serving size: DSLD doses are PER SERVING (often 2 softgels),
+// and a per-serving number read as per-capsule is the classic "amount looks wrong" report.
 async function dsldFetchIngredients(labelId) {
   try {
     const lr = await fetch(`https://api.ods.od.nih.gov/dsld/v9/label/${labelId}`);
     if (!lr.ok) return null;
     const label = await lr.json();
-    const rows = (label.ingredientRows || [])
-      .filter(r => r && r.name && r.category !== 'other' && !_DSLD_SKIP.has(String(r.name).toLowerCase().trim()))
-      .map(r => {
-        const qy = (r.quantity && r.quantity[0]) || {};
-        return { name: String(r.name).trim(), dose: qy.quantity != null ? String(qy.quantity) : '', unit: _dsldUnit(qy.unit) };
-      })
-      .filter(r => r.name);
-    return rows.length ? { name: label.fullName || '', brand: label.brandName || '', ingredients: rows } : null;
+    const keep = r => r && r.name && r.category !== 'other' && !_DSLD_SKIP.has(String(r.name).toLowerCase().trim());
+    const toRow = r => {
+      const qy = (r.quantity && r.quantity[0]) || {};
+      return { name: String(r.name).trim(), dose: qy.quantity != null ? String(qy.quantity) : '', unit: _dsldUnit(qy.unit) };
+    };
+    const rows = [];
+    for (const r of (label.ingredientRows || [])) {
+      if (!keep(r)) continue;
+      rows.push(toRow(r));
+      for (const nr of (r.nestedRows || [])) {
+        if (keep(nr) && nr.quantity && nr.quantity[0] && nr.quantity[0].quantity != null) rows.push(toRow(nr));
+      }
+    }
+    const ss = (label.servingSizes && label.servingSizes[0]) || null;
+    const serving = (ss && ss.minQuantity != null)
+      ? ((ss.minQuantity === ss.maxQuantity || ss.maxQuantity == null ? ss.minQuantity : ss.minQuantity + '–' + ss.maxQuantity) + ' ' + (ss.unit || '')).trim()
+      : '';
+    return rows.length ? { name: label.fullName || '', brand: label.brandName || '', ingredients: rows, serving } : null;
   } catch (_) { return null; }
 }
 
@@ -200,7 +231,7 @@ async function scanParse(dataUrl) {
 
   // Vision rows are built up-front: they're the fallback and the "not listed" picker option.
   // Curated check is !supp.custom (a DSLD/AI custom from an earlier scan must not badge "Verified").
-  _scan.visionRows = ings.map(ing => {
+  _scan.visionRows = dedupeScanRows(ings.map(ing => {
     const supp = _scanMatchSupp(ing.name);
     const curated = !!(supp && !supp.custom);
     return {
@@ -209,7 +240,7 @@ async function scanParse(dataUrl) {
       unit: ing.unit || (curated && supp.doses && supp.doses[0] && supp.doses[0].unit) || 'mg',
       verified: curated
     };
-  });
+  }));
 
   // Layered pipeline: vision reliably reads the product NAME but hallucinates the facts panel.
   // DSLD candidates are shown for the USER to pick — never auto-taken (wrong product wearing
@@ -236,7 +267,7 @@ function scanRenderDsldPicker(cands) {
        ${cands.map(c => `
          <button class="btn btn-outline" style="width:100%;margin-bottom:8px;text-align:left;display:block" onclick="scanPickDsld('${c.id}')">
            <div style="font-weight:600;font-size:13.5px">${_esc(c.name)}</div>
-           <div style="font-size:12px;color:var(--text-muted)">${_esc(c.brand)}</div>
+           <div style="font-size:12px;color:var(--text-muted)">${_esc(c.brand)}${c.year ? ' · ' + _esc(c.year) : ''}${c.off ? ` <span style="color:#b45309">⚠ ${_sl('舊版標籤 — 對下樽上嘅數', 'older label — check against your bottle')}</span>` : ''}</div>
          </button>`).join('')}
      </div>
      <button class="btn btn-primary" style="width:100%;margin-bottom:8px" onclick="scanUseVision()">${_sl('唔喺清單 — 用 AI 讀到嘅成分', 'Not listed — use the AI reading')}</button>
@@ -254,11 +285,12 @@ async function scanPickDsld(labelId) {
   const dsld = await dsldFetchIngredients(labelId);
   if (!dsld || !dsld.ingredients.length) return scanUseVision();
   _scan.source = 'dsld';
-  _scan.rows = dsld.ingredients.map(ing => {
+  _scan.serving = dsld.serving || '';
+  _scan.rows = dedupeScanRows(dsld.ingredients.map(ing => {
     const supp = _scanMatchSupp(ing.name);
     const curated = !!(supp && !supp.custom);
     return { name: curated ? supp.name : ing.name, dose: ing.dose, unit: ing.unit || 'mg', verified: curated, dsld: true };
-  });
+  }));
   scanRenderReview();
   _scanAssess();
 }
@@ -302,7 +334,7 @@ function scanRenderReview() {
             : _sl('AI 已填,改名 / 核對 / 改 / 刪,啱就入庫', 'AI filled these in — name it, check, edit, remove, then save')}</div>
        </div>
      </div>
-     ${_scan.source==='dsld' ? `<div style="background:#eef6f0;border:1px solid #cfe6d6;border-radius:8px;padding:8px 11px;margin-bottom:10px;font-size:12px;color:#2d6a4f">${_sl('成分嚟自美國 NIH 膳食補充劑標籤資料庫 (DSLD),非 AI 估算。', 'Ingredients are from the U.S. NIH Dietary Supplement Label Database (DSLD), not an AI guess.')}</div>` : ''}
+     ${_scan.source==='dsld' ? `<div style="background:#eef6f0;border:1px solid #cfe6d6;border-radius:8px;padding:8px 11px;margin-bottom:10px;font-size:12px;color:#2d6a4f">${_sl('成分嚟自美國 NIH 膳食補充劑標籤資料庫 (DSLD),非 AI 估算。', 'Ingredients are from the U.S. NIH Dietary Supplement Label Database (DSLD), not an AI guess.')}${_scan.serving ? `<div style="margin-top:4px;font-weight:600">${_sl('⚖️ 啲數係每次分量計:', '⚖️ Amounts are per serving of:')} ${_esc(_scan.serving)}</div>` : ''}</div>` : ''}
      <div class="rm-list" style="max-height:46vh">${rows}</div>
      <button class="btn btn-outline" style="width:100%;margin-bottom:10px" onclick="scanAddRow()">+ ${_sl('加一行', 'Add a row')}</button>
      <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5">
@@ -350,6 +382,25 @@ function scanConfirm() {
     customSupps,
     createdAt: todayStr()
   };
+
+  // Onboarding catalog mode: save to the shelf only (no intake logged), loop back to scan more.
+  if (_scanCatalog) {
+    saveProductToShelf(product);
+    _scanShell(
+      `<div class="rm-header">
+         <span class="rm-slot-emoji">✅</span>
+         <div>
+           <div class="rm-title">${_esc(product.name)}</div>
+           <div class="rm-subtitle">${_sl('已加入你嘅架', 'Added to your shelf')} · ${product.ingredients.length} ${_sl('種成分', 'ingredients')}</div>
+         </div>
+       </div>
+       <div class="rm-actions" style="margin-top:8px">
+         <button class="btn btn-outline" style="flex:1" onclick="scanClose();render()">${_sl('返去', 'Done')}</button>
+         <button class="btn btn-primary" style="flex:1" onclick="scanOpen(true)">📷 ${_sl('掃多支', 'Scan another')}</button>
+       </div>`
+    );
+    return;
+  }
 
   const read = logProduct(product);
   scanRenderRead(read);

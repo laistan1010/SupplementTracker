@@ -84,6 +84,23 @@ function logProduct(product) {
   };
 }
 
+// Catalog-only save (onboarding "scan your shelf"): persist the product + fold customs into the
+// runtime DB, but do NOT log today's intake — the user is cataloguing, not consuming.
+function saveProductToShelf(product) {
+  if (!product || !Array.isArray(product.ingredients) || !product.ingredients.length) return null;
+  if (!product.id) product.id = 'prod-' + Date.now();
+  if (!S.products.some(p => p.id === product.id)) S.products.push(product);
+  if (Array.isArray(product.customSupps) && product.customSupps.length) {
+    product.customSupps.forEach(cs => {
+      if (cs && cs.name && !S.customSupps.some(x => x.name.toLowerCase() === cs.name.toLowerCase()))
+        S.customSupps.push(cs);
+    });
+    DB = mergeCustomSupps(DB, S.customSupps);
+  }
+  save();
+  return product;
+}
+
 // Re-log a previously scanned product (from the "My Products" list in Search) without re-scanning.
 // logProduct dedupes the product by id, so this only appends today's per-ingredient entries.
 function logSavedProduct(id) {
@@ -1118,7 +1135,7 @@ function checkBrowserNotif() {
 //  MAIN RENDER
 // ════════════════════════════════════════════════════
 function render() {
-  const views={dashboard:vDashboard,search:vSearch,log:vLog,schedule:vSchedule,history:vHistory,profile:vProfile};
+  const views={dashboard:vDashboard,search:vSearch,log:vLog,schedule:vSchedule,history:vHistory,profile:vProfile,plan:vPlan,onboard:vOnboard};
   document.getElementById('main').innerHTML=(views[S.view]||vDashboard)();
   updateStaticText();
 }
@@ -1136,6 +1153,15 @@ function init() {
   }
   loadState();
   DB = mergeCustomSupps(DB, S.customSupps);   // fold in custom / AI-suggested ingredients from prior scans
+  // Onboarding routing: brand-new users get the scan-your-shelf flow. Anyone with existing
+  // data (logs, products, a profile) is grandfathered in as onboarded — never re-onboard them.
+  if (!S.onboarded) {
+    if (S.products.length || S.history.length || S.loggedToday.length || S.profile.name) {
+      S.onboarded = true; save();
+    } else {
+      S.view = 'onboard';
+    }
+  }
   render();
   updateStaticText();
   initNotifications();     // request browser notif permission + start 1-min interval
