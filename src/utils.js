@@ -150,9 +150,27 @@ function mergeCustomSupps(baseDB, custom) {
   return additions.length ? [...baseDB, ...additions] : baseDB;
 }
 
+// Scan rows (DSLD or vision) can collapse onto the same canonical name — e.g. "Vitamin D"
+// and "Vitamin D3 (as cholecalciferol)" both map to curated "Vitamin D3" — leaving twin rows
+// that double-log. Merge only when SAFE: doses equal (same unit), or one side blank (keep the
+// filled one). Rows with genuinely different doses are BOTH kept — visible and editable on the
+// review screen beats a silent merge that could hide a real amount.
+function dedupeScanRows(rows) {
+  const out = [];
+  for (const r of (rows || [])) {
+    const name = String(r.name || '').trim().toLowerCase();
+    const dup = out.find(o =>
+      String(o.name || '').trim().toLowerCase() === name &&
+      ((o.dose === r.dose && o.unit === r.unit) || o.dose === '' || r.dose === ''));
+    if (!dup) { out.push(r); continue; }
+    if (dup.dose === '' && r.dose !== '') { dup.dose = r.dose; dup.unit = r.unit; }
+  }
+  return out;
+}
+
 // CommonJS export so the zero-dep test file can require these pure functions.
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { detectConflicts, detectMedConflicts, expandProductToEntries, mergeCustomSupps };
+  module.exports = { detectConflicts, detectMedConflicts, expandProductToEntries, mergeCustomSupps, dedupeScanRows };
 }
 
 // ════════════════════════════════════════════════════

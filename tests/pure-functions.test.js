@@ -20,7 +20,7 @@ global.MEDICATION_DB = [
 ];
 global.S = { profile: { medications: [] } };
 
-const { detectConflicts, detectMedConflicts, expandProductToEntries, mergeCustomSupps } =
+const { detectConflicts, detectMedConflicts, expandProductToEntries, mergeCustomSupps, dedupeScanRows } =
   require('../src/utils.js');
 
 let passed = 0, failed = 0;
@@ -96,6 +96,45 @@ test('mergeCustomSupps: adds new custom, dedupes name (builtin wins)', () => {
 test('mergeCustomSupps: empty custom -> base returned unchanged', () => {
   const base = [{ name: 'Iron' }];
   assert.strictEqual(mergeCustomSupps(base, []), base);
+});
+
+// ── dedupeScanRows: twin rows from canonical mapping must not double-log ──
+test('dedupe: same name + same dose/unit collapses to one row', () => {
+  const out = dedupeScanRows([
+    { name: 'Vitamin D3', dose: '1000', unit: 'IU', verified: true },
+    { name: 'vitamin d3', dose: '1000', unit: 'IU', verified: true },
+  ]);
+  assert.strictEqual(out.length, 1, 'expected 1 row, got ' + out.length);
+});
+
+test('dedupe: blank dose merges into the filled twin (dose+unit kept)', () => {
+  const out = dedupeScanRows([
+    { name: 'Zinc', dose: '', unit: 'mg' },
+    { name: 'Zinc', dose: '15', unit: 'mg' },
+  ]);
+  assert.strictEqual(out.length, 1);
+  assert.strictEqual(out[0].dose, '15');
+});
+
+test('dedupe: SAFETY — different doses are both kept, never silently merged', () => {
+  const out = dedupeScanRows([
+    { name: 'Calcium', dose: '200', unit: 'mg' },
+    { name: 'Calcium', dose: '300', unit: 'mg' },
+  ]);
+  assert.strictEqual(out.length, 2, 'must keep both distinct doses');
+});
+
+test('dedupe: same dose but different unit is NOT merged (500mg != 500mcg)', () => {
+  const out = dedupeScanRows([
+    { name: 'B12', dose: '500', unit: 'mcg' },
+    { name: 'B12', dose: '500', unit: 'mg' },
+  ]);
+  assert.strictEqual(out.length, 2);
+});
+
+test('dedupe: distinct names pass through untouched', () => {
+  const rows = [{ name: 'EPA', dose: '650', unit: 'mg' }, { name: 'DHA', dose: '450', unit: 'mg' }];
+  assert.strictEqual(dedupeScanRows(rows).length, 2);
 });
 
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
