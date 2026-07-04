@@ -29,6 +29,7 @@ const PARSE_SYSTEM = [
   '5. IGNORE Calories, Total Fat, Saturated Fat, Sodium and other generic nutrition-facts rows unless they are the actual supplement active.',
   '6. dose = the numeric amount per serving exactly as printed (null if not printed or unreadable). unit = the printed unit (mg, mcg, IU, g). Never guess a number.',
   '7. If the panel is blurry or you are unsure of a name, transcribe what you can read; do NOT substitute a plausible-sounding ingredient.',
+  '8. productName = the BRAND plus the product line and strength exactly as printed on the front, e.g. "Nutricost Alpha GPC 600 mg". Include the brand even when it is a stylised logo (nutricost, SWANSON, NOW). If no brand is visible, use the product line alone.',
   'A single-ingredient product is normal and common. Returning one ingredient is correct if only one is printed.'
 ].join('\n');
 

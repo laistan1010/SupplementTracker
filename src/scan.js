@@ -167,7 +167,16 @@ async function dsldSearchCandidates(name) {
       const prev = byProduct.get(k);
       if (!prev || (prev.off && !c.off) || (prev.off === c.off && c.year > prev.year)) byProduct.set(k, c);
     }
-    return Array.from(byProduct.values()).slice(0, 3);
+    // Brand-aware re-rank: DSLD's own scoring ranks other brands above the user's when the
+    // query names a brand (verified: "Nutricost Alpha GPC..." put BulkSupplements first).
+    // Float candidates whose brand word appears in the query; keep API order within each group.
+    const nq = ' ' + q.toLowerCase().replace(/[^a-z0-9]+/gi, ' ') + ' ';
+    const brandHit = c => {
+      const w = (c.brand || '').toLowerCase().split(/[^a-z0-9]+/).filter(x => x.length >= 3)[0];
+      return w ? nq.indexOf(' ' + w + ' ') >= 0 : false;
+    };
+    const all = Array.from(byProduct.values());
+    return [...all.filter(brandHit), ...all.filter(c => !brandHit(c))].slice(0, 4);
   } catch (_) { return []; }
 }
 
