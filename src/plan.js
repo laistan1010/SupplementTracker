@@ -28,15 +28,19 @@ const GOALS = {
   }
 };
 
-// Unique ingredients across every scanned product, mapped onto the curated DB.
-// Exact name first (scan already canonicalises curated matches), whole-word matcher as fallback
-// for DSLD-verbatim names. sup:null / sup.custom => no reliable timing data (grouped honestly).
+// Unique ingredients across every scanned product, resolved to a supp-shaped object.
+// Curated DB (exact, then whole-word matcher) wins; anything else falls back to Tier-2 class-based
+// knowledge so even non-103 ingredients carry absorption + conflicts. Only truly unknown -> N/A.
 function planShelfItems() {
   const seen = {};
   (S.products || []).forEach(p => (p.ingredients || []).forEach(ing => {
     const key = (ing.name || '').toLowerCase().trim();
     if (!key || seen[key]) { if (seen[key] && !seen[key].dose && ing.dose) { seen[key].dose = ing.dose; seen[key].unit = ing.unit; } return; }
-    const sup = DB.find(s => s.name.toLowerCase() === key) || _scanMatchSupp(ing.name);
+    let sup = DB.find(s => s.name.toLowerCase() === key) || _scanMatchSupp(ing.name);
+    if (!sup && typeof classifyIngredient === 'function') {
+      const k = classifyIngredient(ing.name);          // class-based fallback (not in curated DB)
+      sup = { name: ing.name, custom: true, color: '#9ca3af', timing: k.timing, absorption: k.absorption, conflicts: k.conflicts };
+    }
     seen[key] = { name: sup ? sup.name : ing.name, dose: ing.dose || '', unit: ing.unit || '', sup: sup || null, from: p.name };
   }));
   return Object.values(seen);
@@ -67,10 +71,22 @@ function buildPlan(goals) {
   ['morning', 'anytime', 'evening'].forEach(k =>
     slots[k].sort((a, b) => (b.tags ? b.tags.length : 0) - (a.tags ? a.tags.length : 0)));
 
-  const namesOnShelf = items.map(i => ({ name: i.name }));
   const shelfSet = new Set(items.map(i => i.name.toLowerCase()));
 
-  const conflicts = detectConflicts(namesOnShelf);
+  // Conflicts from each item's OWN conflicts array (curated or class-based), cross-referenced
+  // against the shelf — so non-103 minerals still surface competition warnings.
+  const conflicts = [];
+  const seenC = new Set();
+  items.forEach(it => {
+    if (!it.sup) return;
+    (it.sup.conflicts || []).forEach(c => {
+      if (c.sev === 'positive') return;
+      if (shelfSet.has(String(c.name || '').toLowerCase())) {
+        const k = [it.name.toLowerCase(), String(c.name).toLowerCase()].sort().join('|');
+        if (!seenC.has(k)) { seenC.add(k); conflicts.push({ a: it.name, b: c.name, sev: c.sev, note: c.note }); }
+      }
+    });
+  });
 
   const synergies = [];
   const seenSyn = new Set();
