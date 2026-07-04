@@ -111,30 +111,42 @@ function expandProductToEntries(product) {
   }));
 }
 
-// A scanned / AI-suggested ingredient is persisted as a bare { name, custom, aiSuggested, ... }.
-// Every view that iterates DB (search, dashboard, log) assumes the full builtin-supp shape
-// (category, timing, absorption{...}, color) — a bare object makes them throw on absorption.*,
-// which is what silently kills the Search tab after a scan. Fill safe defaults so a custom supp
-// can never crash a view. Honest, not faked: absorption is flagged unverified, not given a score.
+// knowledge.js (Tier-2 class-based absorption/conflict guidance). Global in the browser;
+// require()'d here so the node test picks it up too. Absent -> plain N/A fallback.
+let _knowledgeMod = null;
+if (typeof require !== 'undefined') { try { _knowledgeMod = require('./knowledge.js'); } catch (_) {} }
+function _classifyKnowledge(name) {
+  if (typeof classifyIngredient === 'function') return classifyIngredient(name);   // browser global
+  if (_knowledgeMod) return _knowledgeMod.classifyIngredient(name);                // node
+  return null;
+}
+
+// A scanned / DSLD / AI ingredient is persisted as a bare { name, custom, ... }. Every view that
+// iterates DB assumes the full builtin-supp shape (category, timing, absorption{...}, conflicts),
+// so a bare object throws on absorption.* (this once silently killed the Search tab). Fill the
+// shape from TIER-2 class-based knowledge (fat-soluble vitamin, mineral, amino acid, ...) so
+// non-curated ingredients still get correct general absorption + common conflicts — honest:
+// scoreLabel reads "General", not the curated "Verified".
 function normalizeCustomSupp(cs) {
   const ai = cs.aiSuggested !== false;    // AI-suggested unless explicitly false (e.g. DSLD-sourced)
+  const k  = _classifyKnowledge(cs.name);
   return {
-    category: cs.dsld ? 'Scanned · NIH DSLD' : 'Scanned · AI-suggested',
     emoji: '🔬',
     color: cs.dsld ? '#588768' : '#9ca3af',
-    timing: 'anytime',
     timingNote: '',
     aliases: [],
-    conflicts: [],
     healthWarnings: [],
     ...cs,                          // caller-provided fields win over the defaults above
     aiSuggested: ai,
-    absorption: cs.absorption || {
-      macro: 'food', macroLabel: '🍽 With Food',
-      score: 0, scoreLabel: 'N/A',
+    // Knowledge-derived fields go AFTER the spread so class guidance is used unless cs overrode it.
+    category:   cs.category || (cs.dsld ? 'Scanned · NIH DSLD' : (k ? k.category : 'Scanned · AI-suggested')),
+    timing:     cs.timing   || (k ? k.timing : 'anytime'),
+    conflicts:  (Array.isArray(cs.conflicts) && cs.conflicts.length) ? cs.conflicts : (k ? k.conflicts : []),
+    absorption: cs.absorption || (k ? k.absorption : {
+      macro: 'food', macroLabel: '🍽 With Food', score: 0, scoreLabel: 'N/A',
       tip: cs.dsld ? 'From NIH DSLD · absorption data not in our database.'
                    : 'AI-suggested ingredient · absorption not verified. For reference only.'
-    }
+    })
   };
 }
 

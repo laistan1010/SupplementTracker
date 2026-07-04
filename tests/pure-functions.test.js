@@ -22,6 +22,7 @@ global.S = { profile: { medications: [] } };
 
 const { detectConflicts, detectMedConflicts, expandProductToEntries, mergeCustomSupps, dedupeScanRows } =
   require('../src/utils.js');
+const { classifyArchetype, classifyIngredient, generalConflicts } = require('../src/knowledge.js');
 
 let passed = 0, failed = 0;
 function test(name, fn) {
@@ -135,6 +136,45 @@ test('dedupe: same dose but different unit is NOT merged (500mg != 500mcg)', () 
 test('dedupe: distinct names pass through untouched', () => {
   const rows = [{ name: 'EPA', dose: '650', unit: 'mg' }, { name: 'DHA', dose: '450', unit: 'mg' }];
   assert.strictEqual(dedupeScanRows(rows).length, 2);
+});
+
+// ── knowledge.js: class-based absorption/conflict for non-curated ingredients ──
+test('classify: fat-soluble vitamin -> fat', () => {
+  assert.strictEqual(classifyArchetype('Vitamin K2 (MK-7)'), 'fat_soluble_vitamin');
+  assert.strictEqual(classifyIngredient('Vitamin K2').absorption.macro, 'fat');
+});
+test('classify: fish oil / omega -> fish_oil (fat)', () => {
+  assert.strictEqual(classifyArchetype('Omega-3 Fish Oil'), 'fish_oil');
+  assert.strictEqual(classifyArchetype('EPA'), 'fish_oil');
+});
+test('classify: mineral -> mineral, with competing-mineral conflicts', () => {
+  assert.strictEqual(classifyArchetype('Magnesium Bisglycinate'), 'mineral');
+  const c = generalConflicts('Manganese');   // matches nothing else -> only generic minerals listed
+  const mg = generalConflicts('Magnesium').map(x => x.name);
+  assert.ok(mg.includes('Iron') && mg.includes('Zinc') && !mg.includes('Magnesium'));
+});
+test('classify: amino acid (L- prefix + known) -> amino_acid (empty)', () => {
+  assert.strictEqual(classifyArchetype('L-Citrulline'), 'amino_acid');
+  assert.strictEqual(classifyArchetype('Ashwagandha Extract'), 'herb_adaptogen');
+});
+test('classify: fiber + probiotic + herb + unknown', () => {
+  assert.strictEqual(classifyArchetype('Psyllium Husk Powder'), 'fiber');
+  assert.strictEqual(classifyArchetype('Lactobacillus acidophilus'), 'probiotic');
+  assert.strictEqual(classifyArchetype('Black Cumin Seed Oil'), 'herb_adaptogen');
+  assert.strictEqual(classifyArchetype('Xkcd Proprietary Blend'), 'generic');
+});
+test('classify: generic ingredient is flagged N/A (honest, no fake data)', () => {
+  assert.strictEqual(classifyIngredient('Totally Unknown Thing').absorption.scoreLabel, 'N/A');
+  assert.notStrictEqual(classifyIngredient('Zinc').absorption.scoreLabel, 'N/A');
+});
+
+// ── mergeCustomSupps now injects class-based absorption + conflicts ──
+test('normalize: a scanned mineral custom gets real absorption + mineral conflicts', () => {
+  const merged = mergeCustomSupps([{ name: 'Iron' }], [{ name: 'Manganese', custom: true, aiSuggested: true, conflicts: [] }]);
+  const mn = merged.find(s => s.name === 'Manganese');
+  assert.strictEqual(mn.absorption.macro, 'food');
+  assert.notStrictEqual(mn.absorption.scoreLabel, 'N/A');
+  assert.ok(mn.conflicts.some(c => c.name === 'Zinc'), 'expected a mineral-competition conflict');
 });
 
 console.log('\n' + passed + ' passed, ' + failed + ' failed');

@@ -330,9 +330,15 @@ function renderProductDetail(product) {
   // Per-ingredient cards — curated shows real absorption/timing, AI-suggested is flagged.
   const cards = ings.map(ing => {
     const sup = DB.find(s => s.name === ing.name);
-    const curated = sup && !sup.custom && sup.absorption;   // rich card only for builtin curated supps
+    const ab = sup && sup.absorption;
+    // Rich card whenever there's real guidance — curated (Verified) OR class-based (General).
+    const hasAbs = ab && typeof ab.macro === 'string' && ab.scoreLabel !== 'N/A';
     const dose = ing.dose ? `${_esc(ing.dose)} ${_esc(ing.unit || '')}` : '';
-    if (curated) {
+    // Source badge: curated builtin = Verified, DSLD-sourced = NIH DSLD, else AI-guess.
+    const srcBadge = (sup && !sup.custom) ? `<span class="badge badge-verified">✓ ${_sl('已核實', 'Verified')}</span>`
+      : (sup && sup.dsld) ? `<span class="badge badge-verified">✓ NIH DSLD</span>`
+      : `<span class="badge badge-ai">~ ${_sl('AI 推測', 'AI-guess')}</span>`;
+    if (hasAbs) {
       return `
         <div class="sup-card" style="margin-bottom:8px">
           <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
@@ -340,11 +346,12 @@ function renderProductDetail(product) {
             <span style="font-size:12px;color:var(--text-muted);white-space:nowrap">${dose}</span>
           </div>
           <div class="badges-row" style="margin:7px 0">
+            ${srcBadge}
             ${timingBadge(sup.timing)}
-            <span class="badge ${macroBadgeCls(sup.absorption.macro)}">${_esc(sup.absorption.macroLabel.split(' ').slice(1).join(' '))}</span>
-            ${scorePill(sup.absorption.scoreLabel, sup.absorption.score)}
+            <span class="badge ${macroBadgeCls(ab.macro)}">${_esc(ab.macroLabel.split(' ').slice(1).join(' '))}</span>
+            ${scorePill(ab.scoreLabel, ab.score)}
           </div>
-          <div style="font-size:12px;color:var(--primary)">${_esc(sup.absorption.tip)}</div>
+          <div style="font-size:12px;color:var(--primary)">${_esc(ab.tip)}</div>
         </div>`;
     }
     return `
@@ -353,9 +360,7 @@ function renderProductDetail(product) {
           <strong style="font-size:14px">${_esc(ing.name)}</strong>
           <span style="font-size:12px;color:var(--text-muted);white-space:nowrap">${dose}</span>
         </div>
-        <div style="margin-top:5px">${(sup && sup.dsld)
-          ? `<span class="badge badge-verified">✓ NIH DSLD</span>`
-          : `<span class="badge badge-ai">~ ${_sl('AI 推測 · 未核實', 'AI-suggested · unverified')}</span>`}</div>
+        <div style="margin-top:5px">${srcBadge}</div>
       </div>`;
   }).join('');
 

@@ -43,7 +43,7 @@ function planShelfItems() {
 }
 
 function planGoalTags(sup, goals) {
-  if (!sup || sup.custom) return [];
+  if (!sup) return [];
   return goals.filter(g => {
     const G = GOALS[g];
     return G && (G.names.includes(sup.name) || G.cats.test(sup.category || ''));
@@ -56,7 +56,10 @@ function buildPlan(goals) {
   const slots = { morning: [], anytime: [], evening: [], nodata: [] };
 
   items.forEach(it => {
-    if (!it.sup || it.sup.custom || !it.sup.absorption) { slots.nodata.push(it); return; }
+    const ab = it.sup && it.sup.absorption;
+    // Include anything with real guidance — curated (Verified) OR class-based (General).
+    // Only truly unknown ingredients (N/A) fall to the no-data group.
+    if (!ab || typeof ab.macro !== 'string' || ab.scoreLabel === 'N/A') { slots.nodata.push(it); return; }
     it.tags = planGoalTags(it.sup, goals);
     const t0 = it.sup.timing === 'meals' ? 'morning' : (it.sup.timing || 'anytime');
     (slots[t0] || slots.anytime).push(it);
